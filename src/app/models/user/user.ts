@@ -1,6 +1,8 @@
+import {environment} from "../../../environments/environment";
+
 export class User {
   private static readonly FALLBACK_AVATAR = "https://unsplash.6-79.cn/random/small";
-  private static readonly SSO_HOST = "https://qt.6-79.cn";
+  private static readonly QT_HOST = environment.qtOrigin;
 
   user_id: number;
   nickname: string;
@@ -28,7 +30,7 @@ export class User {
       return `https:${this.avatar}`;
     }
     if (this.avatar.startsWith("/")) {
-      return `${User.SSO_HOST}${this.avatar}`;
+      return `${User.QT_HOST}${this.avatar}`;
     }
     return this.avatar;
   }

@@ -3,10 +3,11 @@ import {BaseService} from "./base.service";
 import {User} from "../models/user/user";
 import {Subject} from "rxjs";
 import {ResourceTreeService} from "./resource-tree.service";
+import {environment} from "../../environments/environment";
 
 @Injectable()
 export class UserService {
-  public oauth_uri = 'https://qt.6-79.cn/oauth/?app_id=R41nXZEw';
+  public oauth_uri = `${environment.qtOrigin}/oauth/?app_id=${environment.oauthAppId}`;
   public user: User;
   public user_update_center = new Subject<User>();
   public has_get_user: boolean;

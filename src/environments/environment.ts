@@ -4,5 +4,8 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  qtOrigin: 'https://qt.6-79.cn',
+  diskFrontendOrigin: 'https://d.6-79.cn',
+  oauthAppId: 'R41nXZEw',
 };

@@ -14,6 +14,7 @@ import {UserService} from "../../services/user.service";
 import {Resource} from "../../models/res/resource";
 import {Router} from "@angular/router";
 import {FootBtnService} from "../../services/foot-btn.service";
+import {environment} from "../../../environments/environment";
 
 @Component({
   selector: 'app-res-nav',
@@ -172,7 +173,8 @@ export class ResNavComponent implements AfterViewInit, OnChanges {
     if (s === 'mine') {
       this.router.navigate(['/res', this.userService.user.rootRes]);
     } else if (s === 'profile') {
-      window.location.href = `https://qt.6-79.cn/user/info-modify?from=https%3A%2F%2Fd.6-79.cn%2Fuser%2Frefresh`;
+      const from = encodeURIComponent(`${window.location.origin || environment.diskFrontendOrigin}/user/refresh`);
+      window.location.href = `${environment.qtOrigin}/user/info-modify?from=${from}`;
     } else if (s === 'code') {
       window.open('https://github.com/lqj679ssn/disk-frontend');
     } else if (s === 'tips') {
