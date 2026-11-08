@@ -17,7 +17,7 @@ export class RefreshComponent implements OnInit {
         this.router.navigate(['/res', this.userService.user.rootRes])
       })
       .catch(() => {
-        window.location.href = this.userService.oauth_uri;
+        void this.router.navigate(['/login'], { replaceUrl: true });
       });
   }
 }

@@ -9,20 +9,20 @@
     <h1>账号设置</h1>
     <section class="sample account-panel" aria-labelledby="frienden-title">
       <h2 id="frienden-title">友间绑定</h2>
-      <p>授权后，小兜会记录友间已验证的手机号。解绑时会删除小兜保存的号码。</p>
+      <p>授权后，小兜会记录友间已验证的手机号，之后可以用友间登录。</p>
       <p *ngIf="message" role="status">{{message}}</p>
       <p *ngIf="error" class="account-error" role="alert">{{error}}</p>
       <p *ngIf="pending" role="status">处理中…</p>
 
       <div *ngIf="!loggedIn" class="public-actions">
-        <a class="primary" [href]="loginUrl">登录小兜</a>
+        <a class="primary" routerLink="/login" [queryParams]="{next: '/account'}">登录小兜</a>
       </div>
       <ng-container *ngIf="status as binding">
         <p *ngIf="binding.linked" class="account-status">已绑定 · {{binding.phone}}</p>
         <div class="public-actions">
           <button *ngIf="!binding.linked" type="button" class="primary" [disabled]="pending" (click)="link()">绑定友间</button>
           <button *ngIf="binding.linked && !confirmUnlink" type="button" [disabled]="pending" (click)="link()">同步手机号</button>
-          <button *ngIf="binding.linked && !confirmUnlink" type="button" [disabled]="pending" (click)="confirmUnlink = true">解绑</button>
+          <button *ngIf="binding.linked && binding.can_unlink && !confirmUnlink" type="button" [disabled]="pending" (click)="confirmUnlink = true">解绑</button>
         </div>
         <div *ngIf="confirmUnlink">
           <p>确认解绑并删除小兜保存的手机号？</p>

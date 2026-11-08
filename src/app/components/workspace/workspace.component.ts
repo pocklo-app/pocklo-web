@@ -583,6 +583,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   login() {
-    window.location.href = this.user.oauth_uri + '&state=' + encodeURIComponent(this.router.url);
+    void this.router.navigate(['/login'], { queryParams: { next: this.router.url } });
   }
 }

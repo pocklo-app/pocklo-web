@@ -27,26 +27,31 @@ export class UserService {
     BaseService.token = null;
   }
 
+  public acceptLogin(session: { token: string; user: any }) {
+    BaseService.saveToken(session.token);
+    return this.setUser(session.user);
+  }
+
+  private setUser(body: any) {
+    this.user = new User(body);
+    this.has_get_user = true;
+    this.resTreeService.init_root(this.user.rootRes);
+    this.user_update_center.next(this.user);
+    return this.user;
+  }
+
   public api_get_info() {
-    // if (this.user) {
-    //   return Promise.resolve(this.user);
-    // }
-    return this.baseService
-      .get('/api/user/')
-      .then(body => {
-        this.user = new User(body);
-        this.user_update_center.next(this.user);
-        this.has_get_user = true;
-        this.resTreeService.init_root(this.user.rootRes);
-        return this.user;
-      })
-      .catch((error) => {
-        // console.log(error);
-        BaseService.token = null;
-        this.user_update_center.next(null);
-        this.has_get_user = true;
+    const token = BaseService.token;
+    return this.baseService.get('/api/user/')
+      .then(body => token === BaseService.token ? this.setUser(body) : this.user)
+      .catch(error => {
+        if (token === BaseService.token) {
+          BaseService.token = null;
+          this.user = null;
+          this.has_get_user = true;
+          this.user_update_center.next(null);
+        }
         throw error;
-        // BaseService.token_center.next(null);
       });
   }
 

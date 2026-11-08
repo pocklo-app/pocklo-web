@@ -1,7 +1,7 @@
-import {Component, OnInit} from "@angular/core";
+import {Component, DestroyRef, OnInit} from "@angular/core";
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {UserService} from "../../services/user.service";
 import {User} from "../../models/user/user";
-import {ResourceService} from "../../services/resource.service";
 import {ActivatedRoute, Router} from "@angular/router";
 
 @Component({
@@ -12,7 +12,7 @@ export class ResHomeComponent implements OnInit {
 
   constructor(
     private userService: UserService,
-    private resService: ResourceService,
+    private destroyRef: DestroyRef,
     private router: Router,
     public activateRoute: ActivatedRoute,
   ) {}
@@ -34,14 +34,15 @@ export class ResHomeComponent implements OnInit {
     if (this.userService.user) {
       this.jump_user_home(this.userService.user);
     } else if (this.userService.has_get_user) {
-      window.location.href = this.userService.oauth_uri + '&state=' + encodeURI(this.router.url);
+      void this.router.navigate(['/login'], { queryParams: { next: this.router.url }, replaceUrl: true });
+      return;
     }
-    this.userService.user_update_center.asObservable()
+    this.userService.user_update_center.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user: User) => {
         if (user) {
           this.jump_user_home(user);
         } else {
-          window.location.href = this.userService.oauth_uri + '&state=' + encodeURI(this.router.url);
+          void this.router.navigate(['/login'], { queryParams: { next: this.router.url }, replaceUrl: true });
         }
       });
   }

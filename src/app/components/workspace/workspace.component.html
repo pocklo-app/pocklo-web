@@ -45,7 +45,7 @@
     <div *ngIf="notice" class="notice" role="status">{{notice}}</div>
     <div *ngIf="error" class="error" role="alert">
       <p>{{error}}</p>
-      <button *ngIf="!shareToken && !user.has_login" type="button" (click)="login()">SSO 登录</button>
+      <button *ngIf="!shareToken && !user.has_login" type="button" (click)="login()">登录小兜</button>
       <button type="button" (click)="section === 'shares' ? showShares() : load()">重试</button>
     </div>
 

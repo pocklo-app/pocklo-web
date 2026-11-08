@@ -1,47 +1,22 @@
-import {Component, OnInit} from "@angular/core";
-import {ActivatedRoute, Router} from "@angular/router";
-import {UserService} from "../../services/user.service";
-import {BaseService} from "../../services/base.service";
-import {User} from "../../models/user/user";
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
-@Component({
-  template: '',
-})
+import { UserService } from '../../services/user.service';
+import { loginDestination } from './login.component';
+
+@Component({ template: '' })
 export class OauthComponent implements OnInit {
-  code: string;
-  state: string;
+  constructor(private route: ActivatedRoute, private user: UserService, private router: Router) {}
 
-  constructor(
-    public activateRoute: ActivatedRoute,
-    public userService: UserService,
-    public baseService: BaseService,
-    public router: Router,
-  ) {
-    this.code = null;
-    this.state = null;
-  }
-
-  ngOnInit() {
-    this.activateRoute.queryParams.subscribe((params) => {
-      this.code = params['code'];
-      this.state = params['state'];
-
-      this.userService
-        .api_qtb_oauth_check({code: this.code})
-        .then((resp) => {
-          BaseService.saveToken(resp.token);
-          this.userService.api_get_info()
-            .then((user: User) => {
-              if (this.state) {
-                this.router.navigate([this.state]);
-              } else {
-                this.router.navigate(['/res', user.rootRes]);
-              }
-            });
-        })
-        .catch((resp) => {
-          console.log(resp);
-        });
-    });
+  async ngOnInit() {
+    const params = this.route.snapshot.queryParamMap;
+    const next = loginDestination(params.get('state'));
+    try {
+      const session = await this.user.api_qtb_oauth_check({ code: params.get('code') });
+      this.user.acceptLogin(session);
+      await this.router.navigateByUrl(next, { replaceUrl: true });
+    } catch {
+      await this.router.navigate(['/login'], { queryParams: { next }, replaceUrl: true });
+    }
   }
 }

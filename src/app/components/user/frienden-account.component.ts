@@ -1,9 +1,11 @@
 import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { BaseService } from '../../services/base.service';
 import { UserService } from '../../services/user.service';
+
+import { FRIENDEN_LOGIN_KEY, loginDestination } from './login.component';
 
 const BINDING_API = '/api/oauth/frienden/binding';
 const STATE_KEY = 'pocklo.frienden.binding.state';
@@ -11,6 +13,7 @@ const STATE_KEY = 'pocklo.frienden.binding.state';
 interface FriendenStatus {
   linked: boolean;
   phone: string | null;
+  can_unlink: boolean;
 }
 
 @Component({
@@ -28,6 +31,7 @@ export class FriendenAccountComponent implements OnInit {
     private api: BaseService,
     private route: ActivatedRoute,
     private location: Location,
+    private router: Router,
     public user: UserService,
   ) {}
 
@@ -35,13 +39,14 @@ export class FriendenAccountComponent implements OnInit {
     return !!BaseService.token;
   }
 
-  get loginUrl() {
-    return this.user.oauth_uri + '&state=' + encodeURIComponent('/account');
-  }
-
   async ngOnInit() {
     const callback = this.route.snapshot.data['friendenCallback'];
     const params = this.route.snapshot.queryParamMap;
+    if (callback && (!params.get('state') || params.get('state') !== sessionStorage.getItem(STATE_KEY))) {
+      this.location.replaceState('/login');
+      await this.finishLogin(params.get('state'), params.get('code'));
+      return;
+    }
     if (callback) this.location.replaceState('/account');
     if (!this.loggedIn) return;
 
@@ -86,6 +91,30 @@ export class FriendenAccountComponent implements OnInit {
       this.message = '已解绑友间，并删除了保存的手机号。';
     } catch (error) {
       this.error = this.errorMessage(error);
+    } finally {
+      this.pending = false;
+    }
+  }
+
+  private async finishLogin(state: string | null, code: string | null) {
+    this.pending = true;
+    let next = '/res';
+    try {
+      const pending = JSON.parse(sessionStorage.getItem(FRIENDEN_LOGIN_KEY) || 'null');
+      if (!state || pending?.state !== state) {
+        throw '授权回调无效，请在发起登录的标签页完成授权。';
+      }
+      sessionStorage.removeItem(FRIENDEN_LOGIN_KEY);
+      next = loginDestination(pending.next);
+      const session = await this.api.post('/api/oauth/frienden/login/complete', {
+        state, code: code || '', browser_key: pending.browser_key,
+      });
+      this.user.acceptLogin(session);
+      await this.router.navigateByUrl(next, { replaceUrl: true });
+    } catch (error) {
+      await this.router.navigate(['/login'], {
+        queryParams: { next }, replaceUrl: true, state: { friendenError: this.errorMessage(error) },
+      });
     } finally {
       this.pending = false;
     }

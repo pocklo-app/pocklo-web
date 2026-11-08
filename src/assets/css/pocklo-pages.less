@@ -24,10 +24,10 @@ h1 { margin: 10px 0 14px; font-size: clamp(34px, 6vw, 70px); line-height: 1.14; 
 h1 span { color: #f7aa84; }
 .intro { max-width: 36em; color: var(--muted); font-size: 15px; }
 .public-actions { margin-top: 23px; display: flex; flex-wrap: wrap; gap: 8px; }
-.public-actions a, .command button { min-height: 36px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; background: var(--panel); color: var(--ink); font-size: 13px; cursor: pointer; }
-.public-actions a:hover, .command button:hover { background: var(--hover); }
+.public-actions a, .public-actions button, .command button { min-height: 36px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; background: var(--panel); color: var(--ink); font-size: 13px; cursor: pointer; }
+.public-actions a:hover, .public-actions button:hover:not(:disabled), .command button:hover { background: var(--hover); }
 .public-actions .primary { background: var(--accent); color: #242c19; border-color: var(--accent); font-weight: 700; }
-.public-actions .primary:hover { background: #dcf5ad; }
+.public-actions .primary:hover:not(:disabled) { background: #dcf5ad; }
 .sample, .cli-panel { border: 1px solid var(--line); border-radius: 5px; background: var(--panel); overflow: hidden; }
 .sample-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; gap: 8px; }
 .sample ul { list-style: none; }
@@ -53,3 +53,6 @@ h1 span { color: #f7aa84; }
   .public-features { margin-top: 26px; gap: 15px; }
   .cli-index { position: static; display: flex; flex-wrap: wrap; gap: 5px; }
 }
+
+.login-note { margin-top: 16px; }
+.public-actions button:disabled { opacity: .55; cursor: default; }
