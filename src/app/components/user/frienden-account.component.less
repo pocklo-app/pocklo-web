@@ -1,0 +1,19 @@
+.account-main { max-width: 690px; }
+.account-main h1 { font-size: clamp(30px, 6vw, 48px); }
+.account-panel { padding: 18px; }
+.account-panel h2 { margin-bottom: 8px; font-size: 18px; }
+.account-panel p { margin-top: 8px; color: var(--muted); font-size: 14px; }
+.account-panel .account-status { color: var(--accent); }
+.account-panel .account-error { color: #f6aa9c; }
+.account-panel .public-actions { margin-top: 12px; }
+.account-panel button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--canvas);
+  font-size: 13px;
+  cursor: pointer;
+}
+.account-panel button:disabled { opacity: .55; cursor: default; }

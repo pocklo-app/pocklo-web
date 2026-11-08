@@ -18,6 +18,7 @@ import { ResourceService } from "./services/resource.service";
 import { LoadingComponent } from "./components/base/loading.component";
 import { InfoComponent } from "./components/base/info.component";
 import { JumpingComponent } from "./components/base/jumping.component";
+import { FriendenAccountComponent } from "./components/user/frienden-account.component";
 import { OauthComponent } from "./components/user/oauth.component";
 import { RefreshComponent } from "./components/user/refresh.component";
 import { TipsService } from "./services/tips.service";
@@ -48,6 +49,7 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     JumpingComponent,
     InfoComponent,
     OauthComponent,
+    FriendenAccountComponent,
     RefreshComponent,
     ResTreeComponent,
     ClipboardCopyDirective,
