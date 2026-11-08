@@ -212,46 +212,15 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 .view-switch button { min-height: 30px; }
 .view-switch button[aria-pressed="true"] { background: var(--selected); color: var(--accent); }
 .file-art { position: relative; display: grid; place-items: center; flex: none; width: 25px; height: 25px; }
-.file-sprite { display: block; width: 100%; height: 100%; background-image: url('/assets/file-types.webp'); background-repeat: no-repeat; background-size: 300% 300%; background-position: 100% 100%; }
-.file-sprite[data-kind="folder"] { background-position: 0 0; }
-.file-sprite[data-kind="pdf"] { background-position: 50% 0; }
-.file-sprite[data-kind="image"] { background-position: 100% 0; }
-.file-sprite[data-kind="video"] { background-position: 0 50%; }
-.file-sprite[data-kind="audio"] { background-position: 50% 50%; }
-.file-sprite[data-kind="markdown"] { background-position: 100% 50%; }
-.file-sprite[data-kind="text"] { background-position: 0 100%; }
-.file-sprite[data-kind="link"] { background-position: 50% 100%; }
+.file-icon { display: block; width: 100%; height: 100%; }
 .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 8px; padding: 10px; }
 .file-grid .file-row { position: relative; display: block; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 5px; }
 .file-grid .file-row.selected { border-color: var(--accent); }
 .file-grid .file-name { display: flex; flex-direction: column; align-items: stretch; width: 100%; padding: 6px 6px 12px; }
 .file-grid .file-art { width: 100%; height: 88px; border-radius: 3px; background: var(--canvas); overflow: hidden; }
-.file-grid .file-sprite { width: 72px; height: 72px; }
-.file-grid .file-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.file-grid .file-icon { width: 72px; height: 72px; }
+.file-grid .file-thumbnail { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--canvas); }
 .file-grid .file-name > span:nth-child(2) { padding-inline: 3px; }
 .file-grid .file-date, .file-grid .file-size { display: none; }
 .file-grid > .quiet { grid-column: 1 / -1; }
 .preview.preview-pdf { padding: 0; }
-.file-sprite:is([data-kind="document"], [data-kind="sheet"], [data-kind="slides"], [data-kind="archive"],
-  [data-kind="code"], [data-kind="web"], [data-kind="data"], [data-kind="executable"],
-  [data-kind="font"], [data-kind="ebook"], [data-kind="vector"], [data-kind="design"],
-  [data-kind="database"], [data-kind="disk"], [data-kind="subtitle"], [data-kind="cad"]) {
-  background-image: url('/assets/file-types-extended.webp');
-  background-size: 400% 400%;
-}
-.file-sprite[data-kind="document"] { background-position: 0 0; }
-.file-sprite[data-kind="sheet"] { background-position: calc(100% / 3) 0; }
-.file-sprite[data-kind="slides"] { background-position: calc(200% / 3) 0; }
-.file-sprite[data-kind="archive"] { background-position: 100% 0; }
-.file-sprite[data-kind="code"] { background-position: 0 calc(100% / 3); }
-.file-sprite[data-kind="web"] { background-position: calc(100% / 3) calc(100% / 3); }
-.file-sprite[data-kind="data"] { background-position: calc(200% / 3) calc(100% / 3); }
-.file-sprite[data-kind="executable"] { background-position: 100% calc(100% / 3); }
-.file-sprite[data-kind="font"] { background-position: 0 calc(200% / 3); }
-.file-sprite[data-kind="ebook"] { background-position: calc(100% / 3) calc(200% / 3); }
-.file-sprite[data-kind="vector"] { background-position: calc(200% / 3) calc(200% / 3); }
-.file-sprite[data-kind="design"] { background-position: 100% calc(200% / 3); }
-.file-sprite[data-kind="database"] { background-position: 0 100%; }
-.file-sprite[data-kind="disk"] { background-position: calc(100% / 3) 100%; }
-.file-sprite[data-kind="subtitle"] { background-position: calc(200% / 3) 100%; }
-.file-sprite[data-kind="cad"] { background-position: 100% 100%; }

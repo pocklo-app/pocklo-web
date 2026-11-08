@@ -119,8 +119,8 @@
           <div class="file-row" *ngFor="let item of entries; trackBy: byId" [class.selected]="detail?.id === item.id">
             <button class="file-name" type="button" [attr.aria-pressed]="selected?.id === item.id" [disabled]="busy" (click)="select(item)" (dblclick)="openItem(item, $event)" (keydown.enter)="openItem(item, $event)">
               <span class="file-art" aria-hidden="true">
-                <span class="file-sprite" [attr.data-kind]="iconType(item)"></span>
-                <img *ngIf="view === 'grid' && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" (error)="$any($event.target).hidden = true">
+                <img class="file-icon" [src]="'assets/file-types/' + iconType(item) + '.svg'" alt="">
+                <img class="file-thumbnail" *ngIf="view === 'grid' && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false">
               </span>
               <span>{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
             </button>
