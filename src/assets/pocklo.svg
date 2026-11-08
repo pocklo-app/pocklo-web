@@ -1,9 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Pocklo 小兜</title>
-  <rect width="512" height="512" fill="#F7AA84"/>
-  <g id="icon">
-    <path fill="#442527" d="M195 137a19 19 0 0 1 19-19h84a19 19 0 0 1 19 19v69H195z"/>
-    <path fill="#442527" d="M128 226h256v42a128 128 0 0 1-256 0z"/>
-    <path fill="none" stroke="#F7AA84" stroke-width="24" stroke-linecap="round" d="M204 276q52 61 104 0"/>
+  <title id="title">小兜 · 掠</title>
+  <rect width="512" height="512" rx="132" fill="#F2F2E8"/>
+  <g id="icon" fill="#365D4B">
+    <path d="M128 244c9-13 25-10 31 5 16 41 42 64 80 63 56-2 99-58 121-127 4-13 17-18 27-11 8 5 10 14 7 25-23 94-78 161-150 168-54 5-99-29-119-93-4-13-4-21 3-30z"/>
+    <path d="M156 203c-7-5-7-15 0-22 31-32 77-45 123-35 12 2 14 17 2 22-42 0-73 12-103 34-8 5-15 6-22 1z"/>
   </g>
 </svg>
