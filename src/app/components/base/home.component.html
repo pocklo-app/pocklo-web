@@ -1,84 +1,36 @@
-<div class="home-shell">
-  <header class="hero-shell">
-    <div class="hero-bar">
-      <div class="chrome-dots" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-      <div class="brand-line mono">
-        <span class="brand-mark myweb-huntianxia"></span>
-        <span class="brand-command">huntianxia://workspace</span>
-      </div>
-      <button class="nav-action mono" type="button" (click)="open_htx()">
-        {{ userService.has_login ? 'cd ~/vault' : 'auth via sso' }}
-      </button>
-    </div>
-
-    <div class="hero-grid">
-      <section class="hero-copy">
-        <div class="eyebrow mono">FOR GEEKS ONLY</div>
-        <h1>像终端一样干净的网盘工作台。</h1>
-        <p>
-          浑天匣面向熟悉文件系统和命令行心智的用户。你登录后直达目录树，分享后可直接落到下载动作，
-          不让协作者在跳转、确认和装饰性页面里兜圈子。
-        </p>
-        <div class="hero-actions">
-          <button class="primary-btn mono" type="button" (click)="open_htx()">{{primaryActionText}}</button>
-          <button class="secondary-btn mono" type="button" (click)="go_login()">SSO 登录</button>
-          <button class="secondary-btn mono" type="button" (click)="open_cli_docs()">查看 htx CLI</button>
-        </div>
-        <div class="hero-notes">
-          <span class="note mono">SSO</span>
-          <span class="note mono">DIRECT LINK</span>
-          <span class="note mono">TREE VIEW</span>
-          <span class="note mono">MARKDOWN README</span>
-        </div>
-      </section>
-
-      <section class="hero-console">
-        <div class="console-card">
-          <div class="console-title mono">session.log</div>
-          <div class="console-lines mono">
-            <div class="console-line" *ngFor="let line of heroCommands">{{line}}</div>
-            <div class="console-output">[ok] 登录后直达根目录</div>
-            <div class="console-output">[ok] 页面链接与直链都可复制</div>
-            <div class="console-output">[ok] 适合分发文件、镜像、音视频与实验数据</div>
-          </div>
-        </div>
-      </section>
-    </div>
+<div class="public-shell">
+  <header class="public-bar">
+    <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
+    <nav aria-label="主导航">
+      <a routerLink="/cli">命令行</a>
+      <a routerLink="/res">{{userService.has_login ? '我的文件' : '登录'}}</a>
+    </nav>
   </header>
-
-  <section class="protocol-strip">
-    <div class="strip-card">
-      <div class="strip-label mono">workflow</div>
-      <div class="strip-list">
-        <div class="strip-item" *ngFor="let item of workflow; let i = index">
-          <span class="mono index">0{{i + 1}}</span>
-          <span>{{item}}</span>
+  <main class="public-main">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">POCKLO / FILE WORKSPACE</p>
+        <h1>日常文件，<br>随手放进小兜<span>。</span></h1>
+        <p class="intro">把文件和网页链接放进同一处。找得到，打开就能看，想分享时发个链接。</p>
+        <div class="public-actions">
+          <a class="primary" routerLink="/res">{{userService.has_login ? '打开我的文件' : '登录小兜'}}</a>
+          <a routerLink="/cli">查看命令行</a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="feature-grid">
-    <article class="feature-card" *ngFor="let feature of featureCards">
-      <div class="feature-index mono">{{feature.label}}</div>
-      <h2>{{feature.title}}</h2>
-      <p>{{feature.text}}</p>
-    </article>
-  </section>
-
-  <section class="cta-panel">
-    <div class="cta-copy">
-      <div class="eyebrow mono">GET TO THE FILES</div>
-      <h2>需要的是文件，不是表演。</h2>
-      <p>如果你的常用动作是上传、列目录、发直链、补 README，这个工作台会比传统网盘更顺手。</p>
-    </div>
-    <div class="cta-actions">
-      <button class="primary-btn mono" type="button" (click)="open_htx()">$ open workspace</button>
-      <button class="secondary-btn mono" type="button" (click)="open_cli_docs()">htx cli docs</button>
-    </div>
-  </section>
+      <div class="sample" aria-label="文件工作区示例">
+        <div class="sample-header"><strong>我的文件</strong><span class="eyebrow">示例 · 04 项</span></div>
+        <ul>
+          <li><img src="assets/file-types/folder.svg" alt="">项目资料<span>目录</span></li>
+          <li><img src="assets/file-types/pdf.svg" alt="">行程安排.pdf<span>PDF</span></li>
+          <li><img src="assets/file-types/image.svg" alt="">周末照片.jpg<span>图片</span></li>
+          <li><img src="assets/file-types/link.svg" alt="">常用链接<span>链接</span></li>
+        </ul>
+      </div>
+    </section>
+    <section class="public-features" aria-label="小兜的日常用法">
+      <div><p class="eyebrow">01 / ORGANIZE</p><h2>整理</h2><p>列表和缩略图随时切换，在当前目录和子目录里一起搜索。</p></div>
+      <div><p class="eyebrow">02 / PREVIEW</p><h2>预览</h2><p>直接打开图片、视频、PDF、Markdown 和纯文本。</p></div>
+      <div><p class="eyebrow">03 / SHARE</p><h2>分享</h2><p>文件和目录都能发链接，分享后可以随时撤销。</p></div>
+    </section>
+  </main>
 </div>

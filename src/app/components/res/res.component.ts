@@ -730,19 +730,19 @@ export class ResComponent implements OnInit, AfterViewInit {
 
   get download_command() {
     if (!this.resource) {
-      return "htx download";
+      return "pocklo download";
     }
 
     const file_name = this.resource.rname || 'download.bin';
-    return `htx download @${this.resource.res_str_id} "./${this.escapeCliPathSegment(file_name)}"`;
+    return `pocklo download @${this.resource.res_str_id} "./${this.escapeCliPathSegment(file_name)}"`;
   }
 
   get download_directory_command() {
     if (!this.current_res_ref) {
-      return 'htx download @resource-id ./workspace';
+      return 'pocklo download @resource-id ./workspace';
     }
     const directory_name = this.resource?.rname || 'workspace';
-    return `htx download @${this.current_res_ref} "./${this.escapeCliPathSegment(directory_name)}"`;
+    return `pocklo download @${this.current_res_ref} "./${this.escapeCliPathSegment(directory_name)}"`;
   }
 
   get can_copy_direct_link() {
@@ -762,17 +762,17 @@ export class ResComponent implements OnInit, AfterViewInit {
 
   get terminal_list_command() {
     if (!this.current_res_ref) {
-      return "htx ls";
+      return "pocklo ls";
     }
-    return `htx ls @${this.current_res_ref}`;
+    return `pocklo ls @${this.current_res_ref}`;
   }
 
   get parent_list_command() {
     const parent_ref = this.resource?.parent_str_id;
     if (!parent_ref || parent_ref === Resource.ROOT_ID) {
-      return 'htx ls';
+      return 'pocklo ls';
     }
-    return `htx ls @${parent_ref}`;
+    return `pocklo ls @${parent_ref}`;
   }
 
   get htx_command_options() {
@@ -790,7 +790,7 @@ export class ResComponent implements OnInit, AfterViewInit {
 
   get display_command() {
     if (!this.resource) {
-      return 'htx ls';
+      return 'pocklo ls';
     }
     if (this.resource.is_folder) {
       return this.terminal_list_command;

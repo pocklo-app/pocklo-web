@@ -64,6 +64,8 @@ jobs:
         run: npm ci
 
       - name: Build site
+        env:
+          POCKLO_MOVE_UNTIL: ${{ vars.POCKLO_MOVE_UNTIL }}
         run: npm run build:pages
 
       - name: Upload Pages artifact

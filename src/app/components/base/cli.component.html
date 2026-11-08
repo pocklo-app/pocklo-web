@@ -1,125 +1,27 @@
-<div class="cli-workspace">
-  <section class="cli-main">
-    <header class="cli-terminal-shell">
-      <div class="cli-terminal-topbar">
-        <div class="cli-chrome-dots" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="cli-path mono">~/vault/tools/htx</div>
-        <a class="cli-back mono" href="/">return to workspace</a>
-      </div>
-
-      <div class="cli-terminal-copy">
-        <div class="cli-kicker mono">HTX CLI</div>
-        <h1>把资源页的路径感，原样带回终端。</h1>
-        <p>
-          `htx` 是浑天匣的命令行入口。它基于 SSO 获取 token，支持按路径或 `&#64;资源ID` 列目录，
-          也支持上传本地文件/目录、下载远端资源和执行常见目录操作。
-        </p>
-      </div>
-
-      <div class="cli-status-row">
-        <span class="status-pill mono">CLI READY</span>
-        <span class="status-note">为熟悉 shell、目录树和资源 ID 的用户准备。</span>
-      </div>
-
-      <div class="command-bar hero-command">
-        <div class="command-code mono">{{quickStartCommand}}</div>
-        <button class="copy-icon"
-                type="button"
-                title="复制启动命令"
-                ngxClipboard
-                [cbContent]="quickStartCommand"
-                (cbOnError)="copyError()"
-                (cbOnSuccess)="copySuccess('启动命令已复制')">
-          <span class="icon-copy"></span>
-        </button>
-      </div>
+<div class="public-shell">
+  <header class="public-bar">
+    <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
+    <nav aria-label="主导航"><a routerLink="/" >首页</a><a routerLink="/res">我的文件</a></nav>
+  </header>
+  <main class="public-main">
+    <header class="cli-intro">
+      <p class="eyebrow">POCKLO / CLI</p>
+      <h1>在终端打开小兜<span>。</span></h1>
+      <p class="intro">用 <code>pocklo</code> 浏览目录、管理文件，在本地和网盘之间上传下载。</p>
     </header>
-
-    <section class="cli-sequence">
-      <article class="cli-chapter" *ngFor="let section of commandSections; let i = index">
-        <div class="cli-chapter-rail mono">0{{i + 1}}</div>
-        <div class="cli-chapter-body">
-          <div class="cli-chapter-head">
-            <div>
-              <div class="chapter-label mono">{{section.label}}</div>
-              <h2>{{section.title}}</h2>
-            </div>
-            <p>{{section.note}}</p>
+    <div class="cli-layout">
+      <nav class="cli-index" aria-label="命令分类">
+        <a *ngFor="let section of commandSections" [href]="'#' + section.id">{{section.title}}</a>
+      </nav>
+      <div class="cli-sections">
+        <section *ngFor="let section of commandSections; index as i" [id]="section.id" class="cli-panel">
+          <header><p class="eyebrow">0{{i + 1}} / {{section.id}}</p><h2>{{section.title}}</h2><p>{{section.note}}</p></header>
+          <div class="command" *ngFor="let command of section.commands">
+            <span aria-hidden="true">$</span><code class="selectable-preview">{{command}}</code>
+            <button type="button" ngxClipboard [cbContent]="command" (cbOnSuccess)="copyStatus(true)" (cbOnError)="copyStatus(false)" [attr.aria-label]="'复制命令 ' + command">复制</button>
           </div>
-
-          <div class="cli-command-list">
-            <div class="cli-command-row" *ngFor="let command of section.commands">
-              <div class="cli-command-prefix mono">$</div>
-              <div class="cli-command-text mono">{{command}}</div>
-              <button class="copy-icon"
-                      type="button"
-                      title="复制命令"
-                      ngxClipboard
-                      [cbContent]="command"
-                      (cbOnError)="copyError()"
-                      (cbOnSuccess)="copySuccess()">
-                <span class="icon-copy"></span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </article>
-    </section>
-  </section>
-
-  <aside class="cli-side">
-    <div class="cli-dock">
-      <section class="dock-strip">
-        <div class="dock-status-head">
-          <div class="status-pill live">终端工作流</div>
-        </div>
-        <p class="dock-note">这不是营销页，而是一份偏实战的操作面板。你可以把右侧命令直接复制进 shell。</p>
-      </section>
-
-      <section class="dock-strip">
-        <div class="dock-label-row">
-          <div class="dock-label mono">htx</div>
-          <span class="dock-inline-note mono">quick copy</span>
-        </div>
-        <div class="command-stack">
-          <div class="command-bar" *ngFor="let action of sideActions">
-            <div class="command-body">
-              <div class="command-kicker mono">{{action.label}}</div>
-              <div class="command-code mono">{{action.command}}</div>
-            </div>
-            <button class="copy-icon"
-                    type="button"
-                    title="复制命令"
-                    ngxClipboard
-                    [cbContent]="action.command"
-                    (cbOnError)="copyError()"
-                    (cbOnSuccess)="copySuccess(action.title + '命令已复制')">
-              <span class="icon-copy"></span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="dock-strip">
-        <div class="dock-label mono">capabilities</div>
-        <div class="capability-list">
-          <span class="capability-tag mono" *ngFor="let item of capabilities">{{item}}</span>
-        </div>
-      </section>
-
-      <section class="dock-strip">
-        <div class="dock-label mono">workflow</div>
-        <div class="workflow-list">
-          <div class="workflow-item" *ngFor="let item of workflow; let i = index">
-            <span class="workflow-index mono">0{{i + 1}}</span>
-            <span>{{item}}</span>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
-  </aside>
+  </main>
 </div>

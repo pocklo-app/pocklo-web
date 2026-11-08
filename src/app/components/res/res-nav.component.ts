@@ -173,10 +173,10 @@ export class ResNavComponent implements AfterViewInit, OnChanges {
     if (s === 'mine') {
       this.router.navigate(['/res', this.userService.user.rootRes]);
     } else if (s === 'profile') {
-      const from = encodeURIComponent(`${window.location.origin || environment.diskFrontendOrigin}/user/refresh`);
+      const from = encodeURIComponent(`${window.location.origin || environment.pockloOrigin}/user/refresh`);
       window.location.href = `${environment.qtOrigin}/user/info-modify?from=${from}`;
     } else if (s === 'code') {
-      window.open('https://github.com/lqj679ssn/disk-frontend');
+      window.open('https://github.com/pocklo-app/pocklo-web');
     } else if (s === 'tips') {
       this.show_menu = false;
       this.footBtnService.activate_btn(this.footBtnService.foot_btn_tips);

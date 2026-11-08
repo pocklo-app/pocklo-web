@@ -1,0 +1,55 @@
+:host {
+  --canvas: #191d18;
+  --rail: #20261e;
+  --panel: #22271f;
+  --line: #3c4538;
+  --ink: #f0f1e5;
+  --muted: #afb8a8;
+  --accent: #c9e98e;
+  --hover: #2c3628;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  display: block;
+}
+.public-shell { min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom)); background: var(--canvas); color: var(--ink); }
+.public-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--rail); border-bottom: 1px solid var(--line); padding: 13px max(16px, calc((100% - 1080px) / 2)); }
+.public-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; white-space: nowrap; }
+.public-brand img { display: block; width: 35px; height: 35px; border-radius: 8px; }
+.public-brand small { margin-left: 3px; font: 11px var(--mono); color: var(--muted); }
+.public-bar nav { display: flex; align-items: center; justify-content: flex-end; width: auto; height: auto; gap: clamp(12px, 3vw, 26px); font-size: 13px; white-space: nowrap; }
+.public-bar nav a:hover, .cli-index a:hover { color: var(--accent); }
+.public-main { max-width: 1112px; margin-inline: auto; padding: clamp(28px, 6vw, 74px) 16px 44px; }
+.hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(24px, 6vw, 68px); align-items: center; }
+.eyebrow { color: var(--muted); font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+h1 { margin: 10px 0 14px; font-size: clamp(34px, 6vw, 70px); line-height: 1.14; letter-spacing: -.045em; }
+h1 span { color: #f7aa84; }
+.intro { max-width: 36em; color: var(--muted); font-size: 15px; }
+.public-actions { margin-top: 23px; display: flex; flex-wrap: wrap; gap: 8px; }
+.public-actions a, .command button { min-height: 36px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; background: var(--panel); color: var(--ink); font-size: 13px; cursor: pointer; }
+.public-actions a:hover, .command button:hover { background: var(--hover); }
+.public-actions .primary { background: var(--accent); color: #242c19; border-color: var(--accent); font-weight: 700; }
+.public-actions .primary:hover { background: #dcf5ad; }
+.sample, .cli-panel { border: 1px solid var(--line); border-radius: 5px; background: var(--panel); overflow: hidden; }
+.sample-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; gap: 8px; }
+.sample ul { list-style: none; }
+.sample li { display: flex; align-items: center; gap: 9px; min-height: 48px; border-top: 1px solid var(--line); padding: 6px 14px; font-size: 13px; }
+.sample li span { margin-left: auto; color: var(--muted); font-size: 11px; }
+.sample li img { width: 25px; height: 25px; }
+.public-features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 46px; padding-top: 17px; border-top: 1px solid var(--line); }
+.public-features h2, .cli-panel h2 { font-size: 19px; margin-top: 5px; }
+.public-features p:not(.eyebrow), .cli-panel header p:not(.eyebrow) { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.cli-intro { margin-bottom: 24px; }
+.cli-layout { display: grid; grid-template-columns: 152px minmax(0, 1fr); gap: 24px; align-items: start; }
+.cli-index { position: sticky; top: calc(var(--safe-top) + 12px); display: grid; gap: 8px; height: auto; width: auto; font-size: 13px; color: var(--muted); }
+.cli-index a { border-bottom: 1px solid var(--line); padding: 7px; }
+.cli-sections { display: grid; gap: 14px; }
+.cli-panel { scroll-margin-top: 12px; }
+.cli-panel header { padding: 14px 12px; }
+.command { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 7px 12px; background: var(--canvas); }
+.command > span { color: var(--accent); font: 13px var(--mono); }
+.command code { font: 12px/1.55 var(--mono); overflow-wrap: anywhere; }
+.command button { padding: 4px 8px; min-height: 30px; white-space: nowrap; }
+@media (max-width: 680px) {
+  .hero, .public-features, .cli-layout { grid-template-columns: minmax(0, 1fr); }
+  .public-features { margin-top: 26px; gap: 15px; }
+  .cli-index { position: static; display: flex; flex-wrap: wrap; gap: 5px; }
+}

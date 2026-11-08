@@ -1,6 +1,6 @@
 <div class="drive">
   <aside class="rail">
-    <a class="brand" routerLink="/"><span class="myweb-huntianxia" aria-hidden="true"></span><span>浑天匣<small>HUNTIANXIA / DISK</small></span></a>
+    <a class="brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜<small>POCKLO / FILES</small></span></a>
     <div class="rail-label">{{ shareToken ? 'SHARED WORKSPACE' : 'WORKSPACE' }}</div>
     <nav aria-label="工作区">
       <button type="button" [disabled]="busy" [class.active]="section === 'files'" (click)="showFiles()">
@@ -28,7 +28,7 @@
 
     <header class="mast">
       <div>
-        <div class="kicker">{{ section === 'shares' ? 'SHARE / LINKS' : shareToken ? 'SHARE / FILES' : 'DISK / WORKSPACE' }}</div>
+        <div class="kicker">{{ section === 'shares' ? 'SHARE / LINKS' : shareToken ? 'SHARE / FILES' : 'POCKLO / WORKSPACE' }}</div>
         <h1>{{ section === 'shares' ? '我的分享' : data?.resource.name || (shareToken ? '共享文件' : '文件工作区') }}<span aria-hidden="true">_</span></h1>
       </div>
       <div class="actions" *ngIf="section === 'files' && data?.can_manage && data?.resource.folder">

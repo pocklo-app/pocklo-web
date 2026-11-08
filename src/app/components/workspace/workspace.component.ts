@@ -77,7 +77,6 @@ const TYPE_BY_EXTENSION = new Map(
   templateUrl: './workspace.component.html',
   styleUrls: [
     '../../../assets/css/icon-fonts.css',
-    '../../../assets/css/mywebicon.css',
     './workspace.component.less',
   ],
 })
@@ -183,7 +182,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       if (request !== this.requestNumber) return;
-      this.error = this.message(error, '无法连接到浑天匣，请稍后重试。');
+      this.error = this.message(error, '无法连接到小兜，请稍后重试。');
     } finally {
       if (request === this.requestNumber) this.loading = false;
     }

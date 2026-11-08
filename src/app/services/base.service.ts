@@ -21,7 +21,7 @@ export class BaseService {
   constructor(
     private http: HttpClient,
   ) {
-    this.front_host = "https://d.6-79.cn";
+    this.front_host = window.location.origin;
     this.host = environment.apiOrigin;
     this.qn_host = "https://up.qiniup.com";
     this.short_link_host = "https://s.6-79.cn";

@@ -1,4 +1,4 @@
-# DiskFrontend
+# Pocklo Web · 小兜
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.5.0.
 
@@ -35,9 +35,9 @@ That command will:
 Before the first GitHub deployment, make sure the repository is configured with:
 
 - `Settings -> Pages -> Source`: `GitHub Actions`
-- `Settings -> Pages -> Custom domain`: `disk.6-79.cn`
+- `Settings -> Pages -> Custom domain`: `pocklo.jyonn.space`
 
-DNS can keep using the existing CNAME target `jyonn.github.io`.
+Set the `pocklo` CNAME in `jyonn.space` to `pocklo-app.github.io`. During the transition, keep the legacy site serving the same SPA at `d.6-79.cn` with the Pages variable `POCKLO_MOVE_UNTIL` set to the day after the last transition day, in YYYY-MM-DD (China time). Set the existing QiTianBu OAuth application callback to `https://pocklo.jyonn.space/oauth/qtb/callback` once the new site has working HTTPS.
 
 If you want the workflow to auto-enable Pages for a brand new repository, create a secret named `PAGES_DEPLOY_TOKEN` and give that token permission to manage Pages for this repository. Without that secret, the first enablement still needs to be done once in GitHub Settings.
 

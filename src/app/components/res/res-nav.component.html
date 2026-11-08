@@ -58,7 +58,7 @@
     <div class="triangle"></div>
     <div class="menu-list" *ngIf="userService.has_login">
       <div class="menu-title menu-item"><strong>{{userService.user?.nickname || '暂无昵称'}}</strong></div>
-      <div class="menu-item" (click)="menu_handler($event, 'mine')">我的浑天匣</div>
+      <div class="menu-item" (click)="menu_handler($event, 'mine')">我的小兜</div>
       <div class="menu-item" (click)="menu_handler($event, 'profile')">个人信息</div>
       <div class="menu-item" (click)="menu_handler($event, 'tips')">使用贴士</div>
       <div class="menu-item" (click)="menu_handler($event, 'updates')">更新日志</div>
@@ -66,7 +66,7 @@
       <div class="menu-item warn" (click)="userService.exit()">退出登录</div>
     </div>
     <div class="menu-list" *ngIf="!userService.has_login">
-      <div class="menu-item">登录浑天匣</div>
+      <div class="menu-item">登录小兜</div>
 
     </div>
   </div>
