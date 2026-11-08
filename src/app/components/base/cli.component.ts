@@ -10,7 +10,7 @@ import { BaseService } from '../../services/base.service';
 export class CliComponent implements OnInit {
   readonly commandSections = [
     { id: 'install', title: '安装', note: '需要 Python 3.9 或更新版本。', commands: [
-      'python3 -m pip install git+https://github.com/pocklo-app/pocklo-cli.git',
+      'python3 -m pip install pocklo',
     ] },
     { id: 'auth', title: '登录', note: '通过齐天簿完成授权。登录后可以查看当前账户。', commands: [
       'pocklo login', 'pocklo whoami',
