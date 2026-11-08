@@ -3,6 +3,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
+import { trackKeyboardViewport } from './app/keyboard-viewport';
 
 import 'hammerjs';
 
@@ -10,5 +11,6 @@ if (environment.production) {
   enableProdMode();
 }
 
+trackKeyboardViewport();
 platformBrowserDynamic().bootstrapModule(AppModule)
   .catch(err => console.log(err));

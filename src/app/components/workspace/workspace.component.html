@@ -188,8 +188,8 @@
     <video *ngSwitchCase="'video'" [src]="file.url" [poster]="item.thumbnail || ''" controls playsinline preload="metadata" (error)="previewError = '当前浏览器无法播放此视频，可下载原文件。'"></video>
     <audio *ngSwitchCase="'audio'" [src]="file.url" controls preload="metadata"></audio>
     <app-pdf-preview *ngSwitchCase="'pdf'" [url]="pdfUrl(item)" [name]="item.name"></app-pdf-preview>
-    <markdown *ngSwitchCase="'markdown'" [data]="file.text" [safePreview]="true"></markdown>
-    <pre *ngSwitchCase="'text'">{{file.text}}</pre>
+    <markdown *ngSwitchCase="'markdown'" class="selectable-preview" [data]="file.text" [safePreview]="true"></markdown>
+    <pre *ngSwitchCase="'text'" class="selectable-preview">{{file.text}}</pre>
     <a *ngSwitchCase="'link'" [href]="file.url" target="_blank" rel="noopener noreferrer">打开外部链接 ↗</a>
     <p *ngSwitchDefault class="quiet">此格式可以下载后打开。</p>
     <small *ngIf="file.truncated">仅预览文件开头，下载可查看完整内容。</small>
