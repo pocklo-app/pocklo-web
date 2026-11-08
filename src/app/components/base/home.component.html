@@ -2,6 +2,7 @@
   <header class="public-bar">
     <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
     <nav aria-label="主导航">
+      <a routerLink="/developer/docs">开发者</a>
       <a routerLink="/cli">命令行</a>
       <a *ngIf="userService.has_login; else loginJump" routerLink="/res">我的文件</a>
       <ng-template #loginJump><button type="button" class="login-jump" (click)="focusLogin()">登录</button></ng-template>

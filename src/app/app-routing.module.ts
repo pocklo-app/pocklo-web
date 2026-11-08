@@ -8,6 +8,8 @@ import { RefreshComponent } from "./components/user/refresh.component";
 import { HomeComponent } from "./components/base/home.component";
 import { CliComponent } from "./components/base/cli.component";
 
+import { DeveloperComponent } from "./components/developer/developer.component";
+
 const routes: Routes = [
   { path: '', component: HomeComponent},
   { path: 'cli', component: CliComponent},
@@ -24,6 +26,11 @@ const routes: Routes = [
   { path: 'account', component: FriendenAccountComponent },
   { path: 'oauth/frienden/callback', component: FriendenAccountComponent, data: { friendenCallback: true } },
   { path: 'oauth/qtb/callback', component: OauthComponent},
+  { path: 'developer', component: DeveloperComponent, data: { mode: 'applications' } },
+  { path: 'developer/admin', component: DeveloperComponent, data: { mode: 'admin' } },
+  { path: 'developer/docs', component: DeveloperComponent, data: { mode: 'docs' } },
+  { path: 'account/applications', component: DeveloperComponent, data: { mode: 'grants' } },
+  { path: 'oauth/authorize/:id', component: DeveloperComponent, data: { mode: 'consent' } },
   { path: '**', component: HomeComponent},
 ];
 

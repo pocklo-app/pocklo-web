@@ -10,6 +10,7 @@
   <main class="public-main account-main">
     <p class="eyebrow">POCKLO / ACCOUNT</p>
     <h1>账号设置</h1>
+    <div *ngIf="loggedIn" class="public-actions"><a routerLink="/account/applications">已授权应用</a></div>
     <section class="sample account-panel" aria-labelledby="frienden-title">
       <h2 id="frienden-title">友间绑定</h2>
       <p>授权后，小兜会记录友间已验证的手机号，之后可以用友间登录。</p>
