@@ -12,9 +12,9 @@
 .settings { margin-top: 14px; }
 .dev-form .public-actions, .secret .public-actions { margin-top: 4px; }
 label:not(.check) { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
-input:not([type="checkbox"]), textarea { box-sizing: border-box; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--rail); color: var(--ink); font: inherit; }
+input:not([type="checkbox"]), textarea, select { box-sizing: border-box; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--rail); color: var(--ink); font: inherit; }
 textarea { resize: vertical; }
-input:focus-visible, textarea:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 input[readonly], .doc-content { user-select: text; -webkit-user-select: text; }
 .client-id { margin-top: 10px; }
 .client-id input { max-width: 36ch; }

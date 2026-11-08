@@ -1,4 +1,4 @@
-import { copyFile, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const outputDir = join(process.cwd(), "dist", "disk-frontend");
@@ -18,6 +18,11 @@ if (moveUntil) {
 }
 
 await copyFile(indexPath, fallbackPath);
+for (const route of ['developer', 'developer/docs', 'developer/admin', 'account/applications', 'oauth/authorize']) {
+  const directory = join(outputDir, route);
+  await mkdir(directory, { recursive: true });
+  await copyFile(indexPath, join(directory, 'index.html'));
+}
 await writeFile(noJekyllPath, "", "utf8");
 
 console.log("Prepared GitHub Pages artifact:");

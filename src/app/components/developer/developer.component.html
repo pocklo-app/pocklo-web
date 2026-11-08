@@ -39,11 +39,54 @@
       </div>
     </section>
 
-    <ng-container *ngIf="!needsLogin && (mode === 'applications' || mode === 'admin')">
+    <ng-container *ngIf="mode === 'admin'">
+      <form *ngIf="!admin; else adminSession" class="dev-section dev-form" (ngSubmit)="adminLogin()">
+        <h2>管理员登录</h2>
+        <label>管理员邮箱<input name="adminEmail" [(ngModel)]="adminEmail" type="email" autocomplete="username" required></label>
+        <label>验证方式
+          <select name="adminMethod" [(ngModel)]="adminMethod">
+            <option value="email">邮箱验证码</option>
+            <option value="totp">MFA 动态口令</option>
+            <option value="recovery">一次性恢复码</option>
+          </select>
+        </label>
+        <label>{{adminMethod === 'recovery' ? '恢复码' : '验证码'}}
+          <input name="adminCode" [(ngModel)]="adminCode" [attr.inputmode]="adminMethod === 'recovery' ? 'text' : 'numeric'" autocomplete="one-time-code" required>
+        </label>
+        <div class="public-actions">
+          <button type="submit" class="primary" [disabled]="busy">登录</button>
+          <button type="button" *ngIf="adminMethod === 'email'" [disabled]="busy || !adminEmail.trim()" (click)="sendAdminCode()">发送验证码</button>
+        </div>
+      </form>
+      <ng-template #adminSession>
+        <div class="dev-section">
+          <div class="app-head"><h2>{{admin.email}}</h2><span>{{admin.mfa_enabled ? 'MFA 已启用' : '邮箱验证'}}</span></div>
+          <div class="public-actions">
+            <button type="button" *ngIf="!admin.mfa_enabled && !mfa" [disabled]="busy" (click)="setupMfa()">启用 MFA</button>
+            <button type="button" [disabled]="busy" (click)="adminLogout()">退出管理员</button>
+          </div>
+        </div>
+        <form *ngIf="mfa" class="dev-section dev-form" (ngSubmit)="confirmMfa()">
+          <h2>绑定验证器</h2>
+          <p class="status">在验证器中添加基于时间的账号，输入下方密钥，再填入生成的六位动态口令。</p>
+          <label>验证器密钥<input readonly [value]="mfa.secret" (focus)="$any($event.target).select()"></label>
+          <label>动态口令<input name="mfaCode" [(ngModel)]="mfaCode" inputmode="numeric" autocomplete="one-time-code" required></label>
+          <div class="public-actions"><button type="submit" class="primary" [disabled]="busy">确认启用 MFA</button></div>
+        </form>
+        <section *ngIf="recoveryCodes.length" class="dev-section secret">
+          <h2>保存一次性恢复码</h2>
+          <p>这些恢复码只展示一次。验证器不可用时，每条可用于登录一次。</p>
+          <textarea readonly rows="8" [value]="recoveryCodes.join('\n')" (focus)="$any($event.target).select()" aria-label="恢复码"></textarea>
+          <div class="public-actions"><button type="button" (click)="recoveryCodes = []">关闭恢复码</button></div>
+        </section>
+      </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="!needsLogin && (mode === 'applications' || (mode === 'admin' && admin))">
       <p class="intro" *ngIf="mode === 'applications'">注册应用，申请访问文件或创建分享链接。</p>
       <div class="public-actions">
         <button *ngIf="mode === 'applications' && !registering" class="primary" type="button" [disabled]="busy" (click)="registering = true">创建应用</button>
-        <a *ngIf="canReview" routerLink="/developer/admin">应用审批</a>
+        <a *ngIf="mode === 'applications'" routerLink="/developer/admin">管理员入口</a>
         <a *ngIf="mode === 'applications'" routerLink="/account/applications">已授权应用</a>
       </div>
       <form *ngIf="registering" class="dev-section dev-form" (ngSubmit)="register()">

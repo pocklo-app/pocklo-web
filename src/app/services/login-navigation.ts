@@ -6,7 +6,7 @@ export function loginDestination(value: unknown): string {
   }
   const destination = new URL(value, window.location.origin);
   if (destination.origin !== window.location.origin ||
-      !/^\/(?:res(?:\/[^/]+){0,2}|account(?:\/applications)?|developer(?:\/(?:admin|docs))?|oauth\/authorize\/[0-9a-f-]{36})$/.test(destination.pathname)) {
+      !/^\/(?:res(?:\/[^/]+){0,2}|account(?:\/applications)?|developer(?:\/(?:admin|docs))?|oauth\/authorize(?:\/[0-9a-f-]{36})?)$/.test(destination.pathname.replace(/\/$/, ''))) {
     return '/res';
   }
   return destination.pathname + destination.search + destination.hash;

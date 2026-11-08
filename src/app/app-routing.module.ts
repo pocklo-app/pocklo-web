@@ -30,6 +30,7 @@ const routes: Routes = [
   { path: 'developer/admin', component: DeveloperComponent, data: { mode: 'admin' } },
   { path: 'developer/docs', component: DeveloperComponent, data: { mode: 'docs' } },
   { path: 'account/applications', component: DeveloperComponent, data: { mode: 'grants' } },
+  { path: 'oauth/authorize', component: DeveloperComponent, data: { mode: 'consent' } },
   { path: 'oauth/authorize/:id', component: DeveloperComponent, data: { mode: 'consent' } },
   { path: '**', component: HomeComponent},
 ];
