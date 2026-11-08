@@ -1,4 +1,16 @@
 .account-main { max-width: 690px; }
+.logout {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+  background: var(--panel);
+  font-size: 13px;
+  cursor: pointer;
+}
+.logout:hover:not(:disabled) { background: var(--hover); }
+.logout:disabled { opacity: .55; cursor: default; }
 .account-main h1 { font-size: clamp(30px, 6vw, 48px); }
 .account-panel { padding: 18px; }
 .account-panel h2 { margin-bottom: 8px; font-size: 18px; }

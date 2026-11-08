@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {UserService} from "./services/user.service";
 import {BaseService} from "./services/base.service";
 import { environment } from '../environments/environment';
@@ -15,6 +15,13 @@ import {Router} from "@angular/router";
   `,
 })
 export class AppComponent implements OnInit {
+  @HostListener('window:storage', ['$event'])
+  onSessionRemoved(event: StorageEvent) {
+    if (event.storageArea === window.localStorage && event.key === 'token' && event.newValue === null && BaseService.token) {
+      window.location.reload();
+    }
+  }
+
   readonly migrationUntil = document.querySelector<HTMLMetaElement>('meta[name="pocklo-move-until"]')?.content;
   private readonly isLegacyOrigin = window.location.origin === environment.legacyOrigin;
 

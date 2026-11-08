@@ -1,7 +1,10 @@
 <div class="public-shell">
   <header class="public-bar">
     <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
-    <nav aria-label="主导航"><a routerLink="/res">我的文件</a></nav>
+    <nav aria-label="主导航">
+      <a routerLink="/res">我的文件</a>
+      <button *ngIf="loggedIn" type="button" class="logout" [disabled]="pending" (click)="logout()">退出登录</button>
+    </nav>
   </header>
 
   <main class="public-main account-main">

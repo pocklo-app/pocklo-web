@@ -39,6 +39,13 @@ export class FriendenAccountComponent implements OnInit {
     return !!BaseService.token;
   }
 
+  logout() {
+    sessionStorage.removeItem(STATE_KEY);
+    sessionStorage.removeItem(FRIENDEN_LOGIN_KEY);
+    this.user.exit();
+    window.location.replace('/login');
+  }
+
   async ngOnInit() {
     const callback = this.route.snapshot.data['friendenCallback'];
     const params = this.route.snapshot.queryParamMap;
