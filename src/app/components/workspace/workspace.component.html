@@ -1,0 +1,205 @@
+<div class="drive">
+  <aside class="rail">
+    <a class="brand" routerLink="/"><span class="myweb-huntianxia" aria-hidden="true"></span><span>浑天匣<small>HUNTIANXIA / DISK</small></span></a>
+    <div class="rail-label">{{ shareToken ? 'SHARED WORKSPACE' : 'WORKSPACE' }}</div>
+    <nav aria-label="工作区">
+      <button type="button" [disabled]="busy" [class.active]="section === 'files'" (click)="showFiles()">
+        <span class="icon-folder" aria-hidden="true"></span>{{ shareToken ? '共享文件' : '文件浏览' }}
+      </button>
+      <button type="button" *ngIf="!shareToken && (data?.can_manage || user.has_login)" [disabled]="busy" [class.active]="section === 'shares'" (click)="showShares()">
+        <span class="icon-link" aria-hidden="true"></span>我的分享
+      </button>
+      <a *ngIf="user.has_login" routerLink="/res"><span class="icon-box" aria-hidden="true"></span>我的文件</a>
+    </nav>
+    <div class="rail-end"><i></i>{{ shareToken ? 'LINK ACCESS' : 'FILE WORKSPACE' }}</div>
+  </aside>
+
+  <main class="stage">
+    <div class="topline">
+      <nav class="crumbs" *ngIf="section === 'files'" aria-label="当前位置">
+        <ng-container *ngFor="let part of data?.breadcrumbs; let last = last">
+          <button type="button" *ngIf="!last" [disabled]="busy" (click)="go(part.id)">{{part.name}}</button>
+          <span *ngIf="!last" aria-hidden="true">/</span>
+          <span *ngIf="last" aria-current="location">{{part.name}}</span>
+        </ng-container>
+      </nav>
+      <span class="context" *ngIf="shareToken">分享访问</span>
+    </div>
+
+    <header class="mast">
+      <div>
+        <div class="kicker">{{ section === 'shares' ? 'SHARE / LINKS' : shareToken ? 'SHARE / FILES' : 'DISK / WORKSPACE' }}</div>
+        <h1>{{ section === 'shares' ? '我的分享' : data?.resource.name || (shareToken ? '共享文件' : '文件工作区') }}<span aria-hidden="true">_</span></h1>
+      </div>
+      <div class="actions" *ngIf="section === 'files' && data?.can_manage && data?.resource.folder">
+        <button type="button" *ngIf="cut" [disabled]="busy" (click)="paste()">移动到这里</button>
+        <button type="button" [disabled]="busy" (click)="edit('folder')">新建文件夹</button>
+        <button type="button" [disabled]="busy" (click)="folderInput.click()">上传文件夹</button>
+        <button type="button" class="primary" [disabled]="busy" (click)="fileInput.click()"><span class="icon-upload" aria-hidden="true"></span>上传文件</button>
+        <input #fileInput type="file" hidden multiple (change)="upload(fileInput)">
+        <input #folderInput type="file" hidden multiple webkitdirectory (change)="upload(folderInput)">
+      </div>
+    </header>
+
+    <div *ngIf="cut" class="notice"><span>待移动 · {{cut.name}}</span><button type="button" (click)="cut = null">取消移动</button></div>
+    <div *ngIf="notice" class="notice" role="status">{{notice}}</div>
+    <div *ngIf="error" class="error" role="alert">
+      <p>{{error}}</p>
+      <form *ngIf="legacyChallenge" class="unlock" (ngSubmit)="unlockLegacy()">
+        <label for="legacy-code">旧链接的访问密码</label>
+        <input id="legacy-code" name="code" type="password" [(ngModel)]="legacyInput">
+        <button type="submit">打开</button>
+      </form>
+      <button *ngIf="!shareToken && !user.has_login" type="button" (click)="login()">SSO 登录</button>
+      <button type="button" (click)="section === 'shares' ? showShares() : load()">重试</button>
+    </div>
+
+    <section class="share-list" *ngIf="section === 'shares' && !error">
+      <div class="panel-head"><h2>已创建的链接</h2><span>{{shares.length}} 条</span></div>
+      <p class="quiet" *ngIf="loading">正在读取分享列表…</p>
+      <p class="quiet" *ngIf="!loading && !shares.length">在文件或目录的详情里创建分享链接后，链接会出现在这里。</p>
+      <div class="share-row" *ngFor="let share of shares">
+        <div class="share-name"><span class="icon-link" aria-hidden="true"></span><div><strong>{{share.name}}</strong><small>{{share.folder ? '目录及子资源' : '单个文件'}} · {{share.created_at | date:'yyyy-MM-dd HH:mm'}}</small></div></div>
+        <div class="actions"><a [href]="shareUrl(share)" target="_blank" rel="noopener noreferrer">打开</a><button type="button" (click)="copyShare(share)">复制链接</button><button type="button" class="danger" [disabled]="busy" (click)="revokeShare(share)">撤销</button></div>
+      </div>
+    </section>
+    <section class="share-list legacy-shares" *ngIf="section === 'shares' && !error && !loading && legacyShares.length">
+      <div class="panel-head"><h2>旧分享设置</h2><span>{{legacyShares.length}} 项</span></div>
+      <div class="share-row" *ngFor="let share of legacyShares">
+        <div class="share-name"><span class="icon-link" aria-hidden="true"></span><div><strong>{{share.name}}</strong><small>{{share.protected ? '密码访问' : '公开访问'}}</small></div></div>
+        <div class="actions"><a [routerLink]="['/res', share.id]">打开资源</a><button type="button" class="danger" [disabled]="busy" (click)="revokeLegacyShare(share)">关闭旧分享</button></div>
+      </div>
+    </section>
+
+    <p class="quiet" *ngIf="section === 'files' && !data && loading">正在读取文件…</p>
+    <form *ngIf="editor === 'folder'" class="inline-editor" (ngSubmit)="saveEdit()">
+      <label for="new-folder">新建文件夹</label>
+      <input id="new-folder" name="folderName" [(ngModel)]="draft" maxlength="256" required placeholder="文件夹名称">
+      <button type="submit" class="primary" [disabled]="busy || !draft.trim()">创建</button>
+      <button type="button" (click)="editor = null">取消</button>
+    </form>
+
+    <div class="body" *ngIf="section === 'files' && data && !error" [class.single-file]="!data.resource.folder">
+      <section class="listing" *ngIf="data.resource.folder" aria-label="文件列表">
+        <div class="panel-head browser-head">
+          <div><h2>{{query.trim() ? '搜索结果' : '目录内容'}}</h2><span>{{entries.length}}{{data.has_more ? '+' : ''}} 项</span></div>
+          <label class="search"><span class="icon-search" aria-hidden="true"></span><input id="drive-search" type="search" maxlength="256" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录"><kbd>/</kbd></label>
+        </div>
+        <div class="file-head">
+          <button type="button" (click)="setSort('name')">名称 <span *ngIf="sort === 'name'">{{ascending ? '↑' : '↓'}}</span></button>
+          <button type="button" class="file-date" (click)="setSort('created_at')">创建日期 <span *ngIf="sort === 'created_at'">{{ascending ? '↑' : '↓'}}</span></button>
+          <button type="button" (click)="setSort('size')">大小 <span *ngIf="sort === 'size'">{{ascending ? '↑' : '↓'}}</span></button>
+          <span></span>
+        </div>
+        <p class="quiet" *ngIf="loading">正在读取…</p>
+        <ng-container *ngIf="!loading">
+          <div class="file-row" *ngFor="let item of entries; trackBy: byId" [class.selected]="detail?.id === item.id">
+            <button class="file-name" type="button" [disabled]="busy" (click)="activateRow(item, $event)" (dblclick)="openPreview(item, $event)">
+              <span class="type-icon" [class.media]="item.preview === 'image' || item.preview === 'video'" [class.folder]="item.folder" [ngClass]="glyph(item)" aria-hidden="true"></span>
+              <span>{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
+            </button>
+            <time class="file-date">{{item.created_at | date:'yyyy-MM-dd'}}</time>
+            <span class="file-size">{{size(item)}}</span>
+            <button class="file-more" type="button" [attr.aria-label]="'查看 ' + item.name + ' 的详情'" [disabled]="busy" (click)="select(item)">···</button>
+          </div>
+          <p class="quiet" *ngIf="!entries.length">{{query.trim() ? '没有匹配的文件或文件夹。' : '这个文件夹还是空的。'}}</p>
+          <p class="quiet" *ngIf="data.has_more">已显示前 {{entries.length}} 项，可以输入更具体的关键词。</p>
+        </ng-container>
+      </section>
+
+      <aside class="inspector" id="drive-inspector">
+        <ng-container *ngIf="detail || data.resource as item">
+          <ng-template #fileInfo>
+            <dl><div><dt>类型</dt><dd>{{type(item)}}</dd></div><div *ngIf="!item.folder"><dt>大小</dt><dd>{{size(item)}}</dd></div><div><dt>创建时间</dt><dd>{{item.created_at | date:'yyyy-MM-dd HH:mm'}}</dd></div></dl>
+            <p class="note" *ngIf="item.note">{{item.note}}</p>
+          </ng-template>
+
+          <ng-template #closeButton>
+            <button class="minimal" type="button" *ngIf="data.resource.folder && selected" [disabled]="busy" (click)="closeInspector()" [attr.aria-label]="previewActive ? '关闭预览' : '关闭详情'">×</button>
+          </ng-template>
+
+          <ng-container *ngIf="!data.resource.folder && previewActive; else inspectFile">
+            <div class="preview-toolbar">
+              <div class="actions" aria-label="预览操作">
+                <button *ngIf="previewError && item.preview" type="button" (click)="loadPreview(item)">重试</button>
+                <button *ngIf="item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
+                <button *ngIf="data.can_manage" type="button" [disabled]="busy" (click)="createShare(item)">分享</button>
+                <ng-container *ngTemplateOutlet="closeButton"></ng-container>
+              </div>
+            </div>
+            <ng-container *ngTemplateOutlet="previewContent; context: { $implicit: item }"></ng-container>
+            <details class="preview-details">
+              <summary>详情</summary>
+              <div class="inspect-inner">
+                <ng-container *ngTemplateOutlet="fileInfo"></ng-container>
+                <ng-container *ngTemplateOutlet="fileManagement"></ng-container>
+              </div>
+            </details>
+          </ng-container>
+
+          <ng-template #inspectFile>
+            <div class="panel-head"><h2>详情</h2><ng-container *ngTemplateOutlet="closeButton"></ng-container></div>
+            <div class="inspect-inner">
+              <img class="thumbnail" *ngIf="item.thumbnail" [src]="item.thumbnail" alt="" (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false" referrerpolicy="no-referrer">
+              <h3>{{item.name}}</h3>
+              <ng-container *ngTemplateOutlet="fileInfo"></ng-container>
+              <div class="actions inspect-actions">
+                <button *ngIf="item.folder && selected && item.id !== data.resource.id" type="button" (click)="go(item.id)">打开目录</button>
+                <button *ngIf="item.preview" type="button" class="primary" (click)="openPreview(item, $event)">预览</button>
+                <button *ngIf="!item.folder && item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
+                <button *ngIf="data.can_manage" type="button" [disabled]="busy" (click)="createShare(item)">创建分享链接</button>
+              </div>
+              <ng-container *ngTemplateOutlet="fileManagement"></ng-container>
+            </div>
+          </ng-template>
+
+          <ng-template #fileManagement>
+            <div class="manage actions" *ngIf="data.can_manage">
+              <button type="button" [disabled]="busy" (click)="selected = item; edit('rename', item)">重命名</button>
+              <button type="button" [disabled]="busy" (click)="selected = item; edit('note', item)">编辑备注</button>
+              <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" [disabled]="busy" (click)="cut = item">移动</button>
+              <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" class="danger" [disabled]="busy" (click)="remove(item)">删除</button>
+            </div>
+            <form *ngIf="editor === 'rename' || editor === 'note'" class="inline-editor detail-editor" (ngSubmit)="saveEdit()">
+              <label for="file-draft">{{editor === 'note' ? '纯文本备注' : '文件名称'}}</label>
+              <input *ngIf="editor === 'rename'" id="file-draft" name="draft" [(ngModel)]="draft" maxlength="256" required>
+              <textarea *ngIf="editor === 'note'" id="file-draft" name="draft" [(ngModel)]="draft" rows="4"></textarea>
+              <button type="submit" class="primary" [disabled]="busy">保存</button>
+              <button type="button" (click)="editor = null">取消</button>
+            </form>
+          </ng-template>
+        </ng-container>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<dialog #previewDialog class="preview-dialog" aria-labelledby="preview-title" (cancel)="closePreview($event)">
+  <div class="preview-toolbar">
+    <h2 id="preview-title">{{modalItem?.name}}</h2>
+    <div class="actions" *ngIf="modalItem as item">
+      <button *ngIf="previewError && item.preview" type="button" (click)="loadPreview(item)">重试</button>
+      <button *ngIf="item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
+      <button *ngIf="data?.can_manage" type="button" [disabled]="busy" (click)="createShare(item)">分享</button>
+    </div>
+    <button class="preview-close" type="button" autofocus (click)="closePreview()" aria-label="关闭预览">×</button>
+  </div>
+  <ng-container *ngIf="modalItem as item">
+    <ng-container *ngTemplateOutlet="previewContent; context: { $implicit: item }"></ng-container>
+  </ng-container>
+</dialog>
+
+<ng-template #previewContent let-item>
+  <p class="quiet" *ngIf="previewLoading">正在读取预览…</p>
+  <p class="quiet" *ngIf="previewError" role="alert">{{previewError}}</p>
+  <div *ngIf="preview as file" class="preview" [class.preview-reader]="file.kind === 'markdown'" [ngSwitch]="file.kind">
+    <img *ngSwitchCase="'image'" [src]="file.url" [alt]="item.name" (error)="previewError = '无法加载图片，可尝试下载。'" referrerpolicy="no-referrer">
+    <video *ngSwitchCase="'video'" [src]="file.url" [poster]="item.thumbnail || ''" controls playsinline preload="metadata" (error)="previewError = '当前浏览器无法播放此视频，可下载原文件。'"></video>
+    <audio *ngSwitchCase="'audio'" [src]="file.url" controls preload="metadata"></audio>
+    <markdown *ngSwitchCase="'markdown'" [data]="file.text" [safePreview]="true"></markdown>
+    <pre *ngSwitchCase="'text'">{{file.text}}</pre>
+    <a *ngSwitchCase="'link'" [href]="file.url" target="_blank" rel="noopener noreferrer">打开外部链接 ↗</a>
+    <p *ngSwitchDefault class="quiet">此格式可以下载后打开。</p>
+    <small *ngIf="file.truncated">仅预览文件开头，下载可查看完整内容。</small>
+  </div>
+</ng-template>

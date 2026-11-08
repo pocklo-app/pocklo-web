@@ -20,8 +20,8 @@ export class HomeComponent implements OnInit {
   featureCards = [
     {
       label: '01',
-      title: '直链优先',
-      text: '分享出来的链接可以直接落到下载动作，不强迫收件人再走一遍多余页面。'
+      title: '文件和目录都能分享',
+      text: '访客可以用同一个链接浏览、预览和下载。你可以随时撤销链接。'
     },
     {
       label: '02',
@@ -38,7 +38,7 @@ export class HomeComponent implements OnInit {
   workflow = [
     '用 SSO 登录，进入你的根目录。',
     '上传文件、文件夹，或直接生成外链资源。',
-    '把页面链接或直链发给协作者，下载链路一步到位。',
+    '创建分享链接，让协作者直接打开需要的文件或目录。',
   ];
 
   constructor(
@@ -47,7 +47,7 @@ export class HomeComponent implements OnInit {
     private meta: Meta,
   ) {}
   ngOnInit() {
-    this.meta.updateTag({name: 'description', content: `极客风格的网盘工作台，支持目录树浏览、SSO 登录与直链下载。`});
+    this.meta.updateTag({name: 'description', content: `网盘工作台，支持文件搜索、预览和分享。`});
   }
 
   click_avatar() {

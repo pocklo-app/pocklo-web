@@ -1,6 +1,6 @@
 import { NgModule} from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
-import { ResComponent } from "./components/res/res.component";
+import { WorkspaceComponent } from "./components/workspace/workspace.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
 import { OauthComponent } from "./components/user/oauth.component";
 import { RefreshComponent } from "./components/user/refresh.component";
@@ -13,8 +13,9 @@ const routes: Routes = [
   { path: 'user/refresh', component: RefreshComponent},
   { path: 'res', component: ResHomeComponent},
   { path: 'res/next/:next', component: ResHomeComponent},
-  { path: 'res/:res_str_id', component: ResComponent},
-  { path: 'res/:res_str_id/:tab', component: ResComponent},
+  { path: 'res/:res_str_id', component: WorkspaceComponent},
+  { path: 'res/:res_str_id/:tab', component: WorkspaceComponent},
+  { path: 'share/:token', component: WorkspaceComponent},
   { path: 'oauth/qtb/callback', component: OauthComponent},
   { path: '**', component: HomeComponent},
 ];

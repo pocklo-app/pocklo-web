@@ -5,6 +5,7 @@
 
 export const environment = {
   production: false,
+  apiOrigin: 'http://localhost:8000',
   qtOrigin: 'https://qt.6-79.cn',
   diskFrontendOrigin: 'https://d.6-79.cn',
   oauthAppId: 'R41nXZEw',

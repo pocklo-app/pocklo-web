@@ -7,18 +7,15 @@ import { HttpClientModule } from "@angular/common/http";
 import { AppComponent } from './app.component';
 
 import { AppRoutingModule } from "./app-routing.module";
-import { ResComponent } from "./components/res/res.component";
+import { WorkspaceComponent } from "./components/workspace/workspace.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
-import { ResOpComponent } from "./components/res/res-op.component";
 
 import { UserService } from "./services/user.service";
 import { BaseService } from "./services/base.service";
 import { ClockService } from "./services/clock.service";
 import { ResourceService } from "./services/resource.service";
-import { FootBtnService } from "./services/foot-btn.service";
 import { LoadingComponent } from "./components/base/loading.component";
 import { InfoComponent } from "./components/base/info.component";
-import { ResNavComponent } from "./components/res/res-nav.component";
 import { JumpingComponent } from "./components/base/jumping.component";
 import { OauthComponent } from "./components/user/oauth.component";
 import { RefreshComponent } from "./components/user/refresh.component";
@@ -29,7 +26,6 @@ import { ResourceTreeService } from "./services/resource-tree.service";
 import { HomeComponent } from "./components/base/home.component";
 import { CliComponent } from "./components/base/cli.component";
 import { WechatShareService } from "./services/wechat-share.service";
-import {VideoService} from "./services/video.service";
 import { ClipboardCopyDirective } from "./components/shared/clipboard-copy.directive";
 import { MarkdownComponent } from "./components/shared/markdown.component";
 
@@ -44,10 +40,8 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     AppComponent,
     HomeComponent,
     CliComponent,
-    ResComponent,
+    WorkspaceComponent,
     ResHomeComponent,
-    ResNavComponent,
-    ResOpComponent,
     LoadingComponent,
     JumpingComponent,
     InfoComponent,
@@ -68,12 +62,10 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     BaseService,
     ClockService,
     ResourceService,
-    FootBtnService,
     TipsService,
     UpdateService,
     ResourceTreeService,
     WechatShareService,
-    VideoService,
     {
       provide: HAMMER_GESTURE_CONFIG,
       useClass: HammerGestureConfig

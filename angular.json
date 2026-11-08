@@ -33,6 +33,7 @@
               "src/styles.less",
               "node_modules/prismjs/themes/prism-okaidia.css",
               "src/assets/css/showdown-v2.less",
+              "node_modules/github-markdown-css/github-markdown-dark.css",
               "src/assets/css/video-js.css"
             ],
             "allowedCommonJsDependencies": [
@@ -42,6 +43,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -99,6 +106,7 @@
               "src/styles.less",
               "node_modules/prismjs/themes/prism-okaidia.css",
               "src/assets/css/showdown-v2.less",
+              "node_modules/github-markdown-css/github-markdown-dark.css",
               "src/assets/css/video-js.css"
             ],
             "scripts": []

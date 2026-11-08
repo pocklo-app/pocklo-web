@@ -4,6 +4,7 @@ import {Resp} from "../models/base/resp";
 import {firstValueFrom, Observable, Subject} from "rxjs";
 import {filter, map, tap} from "rxjs/operators";
 import {Info} from "../models/base/info";
+import {environment} from "../../environments/environment";
 
 @Injectable()
 export class BaseService {
@@ -21,7 +22,7 @@ export class BaseService {
     private http: HttpClient,
   ) {
     this.front_host = "https://d.6-79.cn";
-    this.host = "https://disk.6-79.cn";
+    this.host = environment.apiOrigin;
     this.qn_host = "https://up.qiniup.com";
     this.short_link_host = "https://s.6-79.cn";
     // this.token = null;
