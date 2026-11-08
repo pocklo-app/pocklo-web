@@ -41,7 +41,7 @@
 .mast h1 { font-size: clamp(28px, 4vw, 51px); line-height: 1.15; margin-top: 8px; overflow-wrap: anywhere; }
 .mast h1 span { color: var(--accent); font: .65em var(--mono); padding-left: .2em; }
 .actions { display: flex; flex-wrap: wrap; gap: 7px; }
-.mast .actions { flex-shrink: 0; justify-content: flex-end; }
+.mast .actions { flex-shrink: 0; max-width: 58%; justify-content: flex-end; }
 
 button, .actions a, .rail nav a {
   display: inline-flex; align-items: center; gap: 7px; justify-content: center;
@@ -68,7 +68,32 @@ button.danger { color: var(--warn); }
 .search input:focus-visible { outline: 0; }
 .search input::placeholder { color: var(--muted); }
 kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
-.file-head, .file-row { display: grid; grid-template-columns: minmax(0, 1fr) 88px 65px 35px; align-items: center; column-gap: 7px; padding: 0 8px 0 12px; }
+.selection-bar {
+  position: sticky;
+  top: var(--safe-top);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px 12px;
+  min-height: 40px;
+  padding: 5px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.selection-bar.engaged { background: var(--selected); }
+.selection-bar small { color: var(--muted); font-size: 11px; }
+.selection-bar small:not(:only-child) { flex-basis: 100%; }
+.selection-name { flex: 1 1 120px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.selection-bar .actions { gap: 4px; }
+.selection-bar button { min-height: 30px; padding: 3px 8px; }
+.selection-bar .clear-selection { color: var(--muted); background: transparent; border-color: transparent; font-size: 17px; line-height: 1; }
+.selection-bar .detail-editor, .selection-bar .delete-confirmation, .operation-error { flex-basis: 100%; }
+.operation-error { color: var(--warn); font-size: 12px; }
+.delete-confirmation { align-items: center; padding-block: 6px; color: var(--warn); font-size: 12px; overflow-wrap: anywhere; }
+.delete-confirmation p { flex: 1 1 150px; }
+.file-head, .file-row { display: grid; grid-template-columns: minmax(0, 1fr) 88px 65px; align-items: center; column-gap: 7px; padding: 0 8px 0 12px; }
 .file-head { background: #1e241d; border-bottom: 1px solid var(--line); }
 .file-head button { background: transparent; border: 0; justify-content: start; padding: 5px 0; color: var(--muted); font-size: 11px; }
 .file-row { min-height: 49px; border-bottom: 1px solid var(--line); }
@@ -79,7 +104,7 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 .file-name span:nth-child(2) { overflow-wrap: anywhere; }
 .file-name small { display: block; color: var(--muted); font-weight: 400; margin-top: 2px; }
 .file-date, .file-size { color: var(--muted); font: 11px var(--mono); }
-.file-more, .inspector .minimal { min-height: 27px; padding: 0 6px; border-color: transparent; background: transparent; font-size: 17px; color: var(--muted); }
+.inspector .minimal { min-height: 27px; padding: 0 6px; border-color: transparent; background: transparent; font-size: 17px; color: var(--muted); }
 
 .inspect-inner { padding: 13px; }
 .inspector h3 { font-size: 15px; overflow-wrap: anywhere; }
@@ -147,8 +172,10 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 .error button { margin-right: 5px; }
 .inline-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .inline-editor input { min-width: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--canvas); color: var(--ink); padding: 6px 8px; }
+.create-editor input { flex: 1 1 150px; }
 .detail-editor { padding: 10px 0 0; border: 0; margin: 0; }
 .detail-editor :is(input, textarea) { width: 100%; }
+.selection-bar .detail-editor input { width: auto; flex: 1 1 120px; }
 
 @media (max-width: 1060px) {
   .drive { grid-template-columns: 160px minmax(0, 1fr); }
@@ -168,12 +195,16 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 @media (max-width: 520px) {
   .stage { padding: 12px; }
   .mast { align-items: start; flex-direction: column; margin: 15px 0; }
-  .mast .actions { justify-content: start; }
-  .file-head, .file-row { grid-template-columns: minmax(0, 1fr) 55px 27px; gap: 5px; padding-inline: 7px; }
+  .mast .actions { justify-content: start; max-width: none; }
+  .file-head, .file-row { grid-template-columns: minmax(0, 1fr) 55px; gap: 5px; padding-inline: 7px; }
   .file-date, kbd { display: none; }
   .panel-head { padding-inline: 8px; }
   .search input { width: 126px; }
   .share-row { align-items: flex-start; flex-direction: column; }
+  .selection-name { flex-basis: 100%; }
+  .selection-bar { padding-inline: 8px; }
+  .selection-bar button { min-height: 36px; }
+  .create-editor input { flex-basis: 100%; width: 100%; }
 }
 
 .view-tools { justify-content: flex-end; }
@@ -192,13 +223,13 @@ kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 .file-sprite[data-kind="link"] { background-position: 50% 100%; }
 .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 8px; padding: 10px; }
 .file-grid .file-row { position: relative; display: block; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 5px; }
+.file-grid .file-row.selected { border-color: var(--accent); }
 .file-grid .file-name { display: flex; flex-direction: column; align-items: stretch; width: 100%; padding: 6px 6px 12px; }
 .file-grid .file-art { width: 100%; height: 88px; border-radius: 3px; background: var(--canvas); overflow: hidden; }
 .file-grid .file-sprite { width: 72px; height: 72px; }
 .file-grid .file-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .file-grid .file-name > span:nth-child(2) { padding-inline: 3px; }
 .file-grid .file-date, .file-grid .file-size { display: none; }
-.file-grid .file-more { position: absolute; right: 6px; top: 6px; background: var(--panel); }
 .file-grid > .quiet { grid-column: 1 / -1; }
 .preview.preview-pdf { padding: 0; }
 .file-sprite:is([data-kind="document"], [data-kind="sheet"], [data-kind="slides"], [data-kind="archive"],

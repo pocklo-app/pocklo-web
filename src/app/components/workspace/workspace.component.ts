@@ -99,9 +99,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   error = '';
   notice = '';
   previewError = '';
-  editor: 'folder' | 'rename' | null = null;
+  editor: 'folder' | 'link' | 'rename' | null = null;
   draft = '';
+  linkUrl = '';
+  operationError = '';
   cut: Entry | null = null;
+  deleteTarget: Entry | null = null;
   sort: 'name' | 'created_at' | 'size' = 'name';
   ascending = true;
   view: 'list' | 'grid' = localStorage.getItem('disk.directory-view') === 'grid' ? 'grid' : 'list';
@@ -110,6 +113,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   private searchTimer: ReturnType<typeof setTimeout>;
   private requestNumber = 0;
   private previewNumber = 0;
+  private renameTarget: Entry | null = null;
+  private cutParentId = '';
   private previewOrigin: { trigger: HTMLElement | null; x: number; y: number; overflow: string };
 
   constructor(
@@ -186,6 +191,13 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   focusSearch(event: KeyboardEvent) {
+    if (event.key === 'Escape' && !this.modalItem && !this.busy) {
+      if (this.editor) this.cancelEdit();
+      else if (this.deleteTarget) this.deleteTarget = null;
+      else if (this.cut) this.cancelMove();
+      else if (this.selected && this.data?.resource.folder) this.closeInspector();
+      return;
+    }
     if (this.modalItem || event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey ||
         (event.target as HTMLElement)?.closest('input, textarea, [contenteditable]')) return;
     const input = document.getElementById('drive-search');
@@ -195,12 +207,22 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
+  updateQuery(value: string) {
+    this.query = value;
+    this.selected = null;
+    if (this.editor === 'rename') this.cancelEdit();
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => void this.load(), 250);
+  }
+
   go(id: string) {
+    if (id === this.data?.resource.id) return;
     if (this.shareToken) {
-      this.router.navigate(['/share', this.shareToken], { queryParams: { folder: id } });
+      void this.router.navigate(['/share', this.shareToken], { queryParams: { folder: id } });
     } else {
-      this.router.navigate(['/res', id]);
+      void this.router.navigate(['/res', id]);
     }
+    window.scrollTo(0, 0);
   }
 
   showFiles() {
@@ -229,18 +251,17 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     }
   }
 
-  select(item: Entry, reveal = true) {
+  select(item: Entry) {
+    if (this.selected?.id === item.id) return;
     this.closeInspector();
     this.selected = item;
-    if (reveal && window.matchMedia('(max-width: 820px)').matches) {
-      document.getElementById('drive-inspector')?.scrollIntoView({ block: 'nearest' });
-    }
   }
 
-  activateRow(item: Entry, event: MouseEvent) {
+  openItem(item: Entry, event: Event) {
+    event.preventDefault();
+    if (this.busy) return;
     if (item.folder) this.go(item.id);
-    else if (event.detail === 0) this.openPreview(item, event);
-    else if (this.selected !== item) this.select(item, false);
+    else this.openPreview(item, event);
   }
 
   openPreview(item: Entry, event: Event) {
@@ -273,7 +294,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   closeInspector() {
     this.closePreview();
     this.selected = null;
-    this.editor = null;
+    this.deleteTarget = null;
+    this.cancelEdit();
     this.resetPreview();
   }
 
@@ -344,31 +366,70 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     });
   }
 
-  edit(mode: 'folder' | 'rename', item?: Entry) {
+  edit(mode: 'folder' | 'link' | 'rename', item?: Entry) {
+    this.deleteTarget = null;
     this.editor = mode;
-    this.draft = mode === 'rename' ? item.name : '';
+    this.renameTarget = item || null;
+    this.draft = item?.name || '';
+    this.linkUrl = '';
+    this.operationError = '';
+    requestAnimationFrame(() => {
+      const input = document.getElementById(mode === 'rename' ? 'file-draft' : 'new-resource-name') as HTMLInputElement | null;
+      input?.focus();
+      if (mode === 'rename') input?.select();
+    });
+  }
+
+  cancelEdit() {
+    this.editor = null;
+    this.renameTarget = null;
+    this.operationError = '';
   }
 
   async saveEdit() {
-    const item = this.selected;
+    const item = this.renameTarget;
     const mode = this.editor;
-    if (!mode || !this.draft.trim()) return;
     const value = this.draft.trim();
+    let link = this.linkUrl.trim();
+    if (!mode || !value || !this.data?.can_manage) return;
+    if (mode === 'link') {
+      try {
+        const url = new URL(link);
+        if (!/^https?:\/\//i.test(link) || !url.hostname || url.href.length > 1024) throw new Error();
+        link = url.href;
+      } catch {
+        this.operationError = '请输入有效的 HTTP 或 HTTPS 链接。';
+        document.getElementById('new-link-url')?.focus();
+        return;
+      }
+    }
     await this.perform(async () => {
       if (mode === 'folder') {
         await this.resources.create_folder(this.data.resource.id, { folder_name: value });
+      } else if (mode === 'link') {
+        await this.resources.create_link(this.data.resource.id, { link_name: value, link });
       } else {
         await this.api.put('/api/res/' + encodeURIComponent(item.id), { rname: value });
         item.name = value;
       }
-      this.editor = null;
-      this.notice = '已保存';
+      this.cancelEdit();
+      if (mode !== 'rename') {
+        clearTimeout(this.searchTimer);
+        this.query = '';
+      }
+      this.notice = mode === 'link' ? '已新建链接「' + value + '」' : mode === 'folder' ? '已新建文件夹「' + value + '」' : '已重命名';
       await this.load();
-    });
+    }, true);
   }
 
-  async remove(item: Entry) {
-    if (!window.confirm('确定删除「' + item.name + '」？')) return;
+  confirmDelete(item: Entry) {
+    this.cancelEdit();
+    this.deleteTarget = item;
+  }
+
+  async remove() {
+    const item = this.deleteTarget;
+    if (!item) return;
     await this.perform(async () => {
       await this.resources.delete_res(item.id);
       const current = this.data.resource.id === item.id;
@@ -377,19 +438,45 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
       if (current && parent) this.go(parent.id);
       else await this.load();
       this.notice = '已删除';
-    });
+    }, true);
+  }
+
+  beginMove(item: Entry) {
+    this.cancelEdit();
+    this.deleteTarget = null;
+    this.cut = item;
+    const current = this.data.resource.id === item.id;
+    this.cutParentId = current ? this.data.breadcrumbs.at(-2)?.id || '' : item.location ? '' : this.data.resource.id;
+    if (!this.data.resource.folder && this.cutParentId) this.go(this.cutParentId);
+  }
+
+  cancelMove() {
+    this.cut = null;
+    this.cutParentId = '';
+    this.operationError = '';
+  }
+
+  get canPaste() {
+    return this.cut && this.data?.can_manage && this.data.resource.folder &&
+      this.cutParentId !== this.data.resource.id && !this.data.breadcrumbs.some(part => part.id === this.cut.id);
+  }
+
+  get moveHint() {
+    if (this.cutParentId === this.data.resource.id) return '资源已在此目录，请选择其他目录。';
+    if (!this.canPaste) return '不能移入自身或子目录，请选择其他目录。';
+    return '移动后，资源会按目标目录的分享范围访问。';
   }
 
   async paste() {
-    if (!this.cut || !this.data?.resource.folder) return;
-    if (!window.confirm('移动后，文件将按新目录的分享范围访问。确定移动？')) return;
+    if (!this.canPaste) return;
     const item = this.cut;
     await this.perform(async () => {
       await this.api.put('/api/res/' + encodeURIComponent(item.id), { parent_str_id: this.data.resource.id });
-      this.cut = null;
+      this.cancelMove();
+      this.selected = null;
       this.notice = '已移动「' + item.name + '」';
       await this.load();
-    });
+    }, true);
   }
 
   async upload(input: HTMLInputElement) {
@@ -424,14 +511,17 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async perform(action: () => Promise<void>) {
+  private async perform(action: () => Promise<void>, localError = false) {
     if (this.busy) return;
     this.busy = true;
     this.notice = '';
+    this.operationError = '';
     try {
       await action();
     } catch (error) {
-      this.notice = this.message(error, '操作失败，请重试。');
+      const message = this.message(error, '操作失败，请重试。');
+      if (localError) this.operationError = message;
+      else this.notice = message;
     } finally {
       this.busy = false;
     }
