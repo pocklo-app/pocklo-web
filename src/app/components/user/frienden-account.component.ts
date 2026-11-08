@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BaseService } from '../../services/base.service';
 import { UserService } from '../../services/user.service';
 
-import { FRIENDEN_LOGIN_KEY, loginDestination } from './login.component';
+import { FRIENDEN_LOGIN_KEY, loginDestination } from '../../services/login-navigation';
 
 const BINDING_API = '/api/oauth/frienden/binding';
 const STATE_KEY = 'pocklo.frienden.binding.state';
@@ -43,14 +43,14 @@ export class FriendenAccountComponent implements OnInit {
     sessionStorage.removeItem(STATE_KEY);
     sessionStorage.removeItem(FRIENDEN_LOGIN_KEY);
     this.user.exit();
-    window.location.replace('/login');
+    window.location.replace('/');
   }
 
   async ngOnInit() {
     const callback = this.route.snapshot.data['friendenCallback'];
     const params = this.route.snapshot.queryParamMap;
     if (callback && (!params.get('state') || params.get('state') !== sessionStorage.getItem(STATE_KEY))) {
-      this.location.replaceState('/login');
+      this.location.replaceState('/');
       await this.finishLogin(params.get('state'), params.get('code'));
       return;
     }
@@ -119,8 +119,8 @@ export class FriendenAccountComponent implements OnInit {
       this.user.acceptLogin(session);
       await this.router.navigateByUrl(next, { replaceUrl: true });
     } catch (error) {
-      await this.router.navigate(['/login'], {
-        queryParams: { next }, replaceUrl: true, state: { friendenError: this.errorMessage(error) },
+      await this.router.navigate(['/'], {
+        queryParams: { next }, replaceUrl: true, state: { loginError: this.errorMessage(error) },
       });
     } finally {
       this.pending = false;

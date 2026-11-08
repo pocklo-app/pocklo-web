@@ -18,7 +18,7 @@
       <p *ngIf="pending" role="status">处理中…</p>
 
       <div *ngIf="!loggedIn" class="public-actions">
-        <a class="primary" routerLink="/login" [queryParams]="{next: '/account'}">登录小兜</a>
+        <a class="primary" routerLink="/" [queryParams]="{next: '/account'}">登录小兜</a>
       </div>
       <ng-container *ngIf="status as binding">
         <p *ngIf="binding.linked" class="account-status">已绑定 · {{binding.phone}}</p>

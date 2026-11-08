@@ -583,6 +583,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   login() {
-    void this.router.navigate(['/login'], { queryParams: { next: this.router.url } });
+    void this.router.navigate(['/'], { queryParams: { next: this.router.url } });
   }
 }

@@ -47,7 +47,7 @@ export class AppComponent implements OnInit {
       .catch((resp) => {
         if (resp === BaseService.relogin_warn) {
           setTimeout(() => {
-            void this.router.navigate(['/login'], { queryParams: { next: this.router.url } });
+            void this.router.navigate(['/'], { queryParams: { next: this.router.url } });
           }, 3000);
         }
       });

@@ -34,7 +34,7 @@ export class ResHomeComponent implements OnInit {
     if (this.userService.user) {
       this.jump_user_home(this.userService.user);
     } else if (this.userService.has_get_user) {
-      void this.router.navigate(['/login'], { queryParams: { next: this.router.url }, replaceUrl: true });
+      void this.router.navigate(['/'], { queryParams: { next: this.router.url }, replaceUrl: true });
       return;
     }
     this.userService.user_update_center.pipe(takeUntilDestroyed(this.destroyRef))
@@ -42,7 +42,7 @@ export class ResHomeComponent implements OnInit {
         if (user) {
           this.jump_user_home(user);
         } else {
-          void this.router.navigate(['/login'], { queryParams: { next: this.router.url }, replaceUrl: true });
+          void this.router.navigate(['/'], { queryParams: { next: this.router.url }, replaceUrl: true });
         }
       });
   }

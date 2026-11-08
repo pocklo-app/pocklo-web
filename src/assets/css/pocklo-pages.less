@@ -16,7 +16,7 @@
 .public-brand img { display: block; width: 35px; height: 35px; border-radius: 8px; }
 .public-brand small { margin-left: 3px; font: 11px var(--mono); color: var(--muted); }
 .public-bar nav { display: flex; align-items: center; justify-content: flex-end; width: auto; height: auto; gap: clamp(12px, 3vw, 26px); font-size: 13px; white-space: nowrap; }
-.public-bar nav a:hover, .cli-index a:hover { color: var(--accent); }
+.public-bar nav a:hover, .public-bar .login-jump:hover, .cli-index a:hover { color: var(--accent); }
 .public-main { max-width: 1112px; margin-inline: auto; padding: clamp(28px, 6vw, 74px) 16px 44px; }
 .hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(24px, 6vw, 68px); align-items: center; }
 .eyebrow { color: var(--muted); font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
@@ -54,5 +54,7 @@ h1 span { color: #f7aa84; }
   .cli-index { position: static; display: flex; flex-wrap: wrap; gap: 5px; }
 }
 
-.login-note { margin-top: 16px; }
+.public-bar .login-jump { padding: 0; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.hero .login-note { margin-top: 12px; font-size: 13px; }
+.hero .login-note[role="alert"] { color: #f6aa9c; }
 .public-actions button:disabled { opacity: .55; cursor: default; }

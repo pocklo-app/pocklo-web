@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { UserService } from '../../services/user.service';
-import { loginDestination } from './login.component';
+import { loginDestination } from '../../services/login-navigation';
 
 @Component({ template: '' })
 export class OauthComponent implements OnInit {
@@ -16,7 +16,7 @@ export class OauthComponent implements OnInit {
       this.user.acceptLogin(session);
       await this.router.navigateByUrl(next, { replaceUrl: true });
     } catch {
-      await this.router.navigate(['/login'], { queryParams: { next }, replaceUrl: true });
+      await this.router.navigate(['/'], { queryParams: { next }, replaceUrl: true, state: { loginError: '齐天簿登录未完成，请重试。' } });
     }
   }
 }

@@ -3,7 +3,8 @@
     <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
     <nav aria-label="主导航">
       <a routerLink="/cli">命令行</a>
-      <a routerLink="/res">{{userService.has_login ? '我的文件' : '登录'}}</a>
+      <a *ngIf="userService.has_login; else loginJump" routerLink="/res">我的文件</a>
+      <ng-template #loginJump><button type="button" class="login-jump" (click)="focusLogin()">登录</button></ng-template>
     </nav>
   </header>
   <main class="public-main">
@@ -13,9 +14,17 @@
         <h1>日常文件，<br>随手放进小兜<span>。</span></h1>
         <p class="intro">把文件和网页链接放进同一处。找得到，打开就能看，想分享时发个链接。</p>
         <div class="public-actions">
-          <a class="primary" routerLink="/res">{{userService.has_login ? '打开我的文件' : '登录小兜'}}</a>
+          <a *ngIf="userService.has_login; else loginOptions" class="primary" routerLink="/res">打开我的文件</a>
+          <ng-template #loginOptions>
+            <button #friendenButton type="button" class="primary" [disabled]="pending" (click)="friendenLogin()">
+              {{pending ? '正在打开友间…' : '使用友间登录'}}
+            </button>
+            <a [href]="qitianUrl">使用齐天簿登录</a>
+          </ng-template>
           <a routerLink="/cli">查看命令行</a>
         </div>
+        <p *ngIf="error" class="login-note" role="alert">{{error}}</p>
+        <p *ngIf="!userService.has_login" class="intro login-note">已有齐天簿账号？先用齐天簿登录并绑定友间，之后就能用友间打开原来的文件。</p>
       </div>
       <div class="sample" aria-label="文件工作区示例">
         <div class="sample-header"><strong>我的文件</strong><span class="eyebrow">示例 · 04 项</span></div>
