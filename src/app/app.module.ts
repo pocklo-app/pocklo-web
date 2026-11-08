@@ -7,6 +7,7 @@ import { HttpClientModule } from "@angular/common/http";
 import { AppComponent } from './app.component';
 
 import { AppRoutingModule } from "./app-routing.module";
+import { PdfPreviewComponent } from "./components/shared/pdf-preview.component";
 import { WorkspaceComponent } from "./components/workspace/workspace.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
 
@@ -41,6 +42,7 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     HomeComponent,
     CliComponent,
     WorkspaceComponent,
+    PdfPreviewComponent,
     ResHomeComponent,
     LoadingComponent,
     JumpingComponent,

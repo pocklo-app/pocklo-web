@@ -45,11 +45,6 @@
     <div *ngIf="notice" class="notice" role="status">{{notice}}</div>
     <div *ngIf="error" class="error" role="alert">
       <p>{{error}}</p>
-      <form *ngIf="legacyChallenge" class="unlock" (ngSubmit)="unlockLegacy()">
-        <label for="legacy-code">旧链接的访问密码</label>
-        <input id="legacy-code" name="code" type="password" [(ngModel)]="legacyInput">
-        <button type="submit">打开</button>
-      </form>
       <button *ngIf="!shareToken && !user.has_login" type="button" (click)="login()">SSO 登录</button>
       <button type="button" (click)="section === 'shares' ? showShares() : load()">重试</button>
     </div>
@@ -63,14 +58,6 @@
         <div class="actions"><a [href]="shareUrl(share)" target="_blank" rel="noopener noreferrer">打开</a><button type="button" (click)="copyShare(share)">复制链接</button><button type="button" class="danger" [disabled]="busy" (click)="revokeShare(share)">撤销</button></div>
       </div>
     </section>
-    <section class="share-list legacy-shares" *ngIf="section === 'shares' && !error && !loading && legacyShares.length">
-      <div class="panel-head"><h2>旧分享设置</h2><span>{{legacyShares.length}} 项</span></div>
-      <div class="share-row" *ngFor="let share of legacyShares">
-        <div class="share-name"><span class="icon-link" aria-hidden="true"></span><div><strong>{{share.name}}</strong><small>{{share.protected ? '密码访问' : '公开访问'}}</small></div></div>
-        <div class="actions"><a [routerLink]="['/res', share.id]">打开资源</a><button type="button" class="danger" [disabled]="busy" (click)="revokeLegacyShare(share)">关闭旧分享</button></div>
-      </div>
-    </section>
-
     <p class="quiet" *ngIf="section === 'files' && !data && loading">正在读取文件…</p>
     <form *ngIf="editor === 'folder'" class="inline-editor" (ngSubmit)="saveEdit()">
       <label for="new-folder">新建文件夹</label>
@@ -83,19 +70,26 @@
       <section class="listing" *ngIf="data.resource.folder" aria-label="文件列表">
         <div class="panel-head browser-head">
           <div><h2>{{query.trim() ? '搜索结果' : '目录内容'}}</h2><span>{{entries.length}}{{data.has_more ? '+' : ''}} 项</span></div>
-          <label class="search"><span class="icon-search" aria-hidden="true"></span><input id="drive-search" type="search" maxlength="256" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录"><kbd>/</kbd></label>
+          <div class="view-tools"><label class="search"><span class="icon-search" aria-hidden="true"></span><input id="drive-search" type="search" maxlength="256" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录"><kbd>/</kbd></label>
+          <div class="view-switch" role="group" aria-label="目录视图">
+            <button type="button" [attr.aria-pressed]="view === 'list'" (click)="setView('list')">列表</button>
+            <button type="button" [attr.aria-pressed]="view === 'grid'" (click)="setView('grid')">缩略图</button>
+          </div></div>
         </div>
-        <div class="file-head">
+        <div class="file-head" *ngIf="view === 'list'">
           <button type="button" (click)="setSort('name')">名称 <span *ngIf="sort === 'name'">{{ascending ? '↑' : '↓'}}</span></button>
           <button type="button" class="file-date" (click)="setSort('created_at')">创建日期 <span *ngIf="sort === 'created_at'">{{ascending ? '↑' : '↓'}}</span></button>
           <button type="button" (click)="setSort('size')">大小 <span *ngIf="sort === 'size'">{{ascending ? '↑' : '↓'}}</span></button>
           <span></span>
         </div>
         <p class="quiet" *ngIf="loading">正在读取…</p>
-        <ng-container *ngIf="!loading">
+        <div *ngIf="!loading" [class.file-grid]="view === 'grid'">
           <div class="file-row" *ngFor="let item of entries; trackBy: byId" [class.selected]="detail?.id === item.id">
             <button class="file-name" type="button" [disabled]="busy" (click)="activateRow(item, $event)" (dblclick)="openPreview(item, $event)">
-              <span class="type-icon" [class.media]="item.preview === 'image' || item.preview === 'video'" [class.folder]="item.folder" [ngClass]="glyph(item)" aria-hidden="true"></span>
+              <span class="file-art" aria-hidden="true">
+                <span class="file-sprite" [attr.data-kind]="iconType(item)"></span>
+                <img *ngIf="view === 'grid' && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" (error)="$any($event.target).hidden = true">
+              </span>
               <span>{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
             </button>
             <time class="file-date">{{item.created_at | date:'yyyy-MM-dd'}}</time>
@@ -104,14 +98,13 @@
           </div>
           <p class="quiet" *ngIf="!entries.length">{{query.trim() ? '没有匹配的文件或文件夹。' : '这个文件夹还是空的。'}}</p>
           <p class="quiet" *ngIf="data.has_more">已显示前 {{entries.length}} 项，可以输入更具体的关键词。</p>
-        </ng-container>
+        </div>
       </section>
 
       <aside class="inspector" id="drive-inspector">
         <ng-container *ngIf="detail || data.resource as item">
           <ng-template #fileInfo>
             <dl><div><dt>类型</dt><dd>{{type(item)}}</dd></div><div *ngIf="!item.folder"><dt>大小</dt><dd>{{size(item)}}</dd></div><div><dt>创建时间</dt><dd>{{item.created_at | date:'yyyy-MM-dd HH:mm'}}</dd></div></dl>
-            <p class="note" *ngIf="item.note">{{item.note}}</p>
           </ng-template>
 
           <ng-template #closeButton>
@@ -156,14 +149,12 @@
           <ng-template #fileManagement>
             <div class="manage actions" *ngIf="data.can_manage">
               <button type="button" [disabled]="busy" (click)="selected = item; edit('rename', item)">重命名</button>
-              <button type="button" [disabled]="busy" (click)="selected = item; edit('note', item)">编辑备注</button>
               <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" [disabled]="busy" (click)="cut = item">移动</button>
               <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" class="danger" [disabled]="busy" (click)="remove(item)">删除</button>
             </div>
-            <form *ngIf="editor === 'rename' || editor === 'note'" class="inline-editor detail-editor" (ngSubmit)="saveEdit()">
-              <label for="file-draft">{{editor === 'note' ? '纯文本备注' : '文件名称'}}</label>
-              <input *ngIf="editor === 'rename'" id="file-draft" name="draft" [(ngModel)]="draft" maxlength="256" required>
-              <textarea *ngIf="editor === 'note'" id="file-draft" name="draft" [(ngModel)]="draft" rows="4"></textarea>
+            <form *ngIf="editor === 'rename'" class="inline-editor detail-editor" (ngSubmit)="saveEdit()">
+              <label for="file-draft">文件名称</label>
+              <input id="file-draft" name="draft" [(ngModel)]="draft" maxlength="256" required>
               <button type="submit" class="primary" [disabled]="busy">保存</button>
               <button type="button" (click)="editor = null">取消</button>
             </form>
@@ -192,10 +183,11 @@
 <ng-template #previewContent let-item>
   <p class="quiet" *ngIf="previewLoading">正在读取预览…</p>
   <p class="quiet" *ngIf="previewError" role="alert">{{previewError}}</p>
-  <div *ngIf="preview as file" class="preview" [class.preview-reader]="file.kind === 'markdown'" [ngSwitch]="file.kind">
+  <div *ngIf="preview as file" class="preview" [class.preview-reader]="file.kind === 'markdown'" [class.preview-pdf]="file.kind === 'pdf'" [ngSwitch]="file.kind">
     <img *ngSwitchCase="'image'" [src]="file.url" [alt]="item.name" (error)="previewError = '无法加载图片，可尝试下载。'" referrerpolicy="no-referrer">
     <video *ngSwitchCase="'video'" [src]="file.url" [poster]="item.thumbnail || ''" controls playsinline preload="metadata" (error)="previewError = '当前浏览器无法播放此视频，可下载原文件。'"></video>
     <audio *ngSwitchCase="'audio'" [src]="file.url" controls preload="metadata"></audio>
+    <app-pdf-preview *ngSwitchCase="'pdf'" [url]="pdfUrl(item)" [name]="item.name"></app-pdf-preview>
     <markdown *ngSwitchCase="'markdown'" [data]="file.text" [safePreview]="true"></markdown>
     <pre *ngSwitchCase="'text'">{{file.text}}</pre>
     <a *ngSwitchCase="'link'" [href]="file.url" target="_blank" rel="noopener noreferrer">打开外部链接 ↗</a>

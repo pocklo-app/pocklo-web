@@ -22,6 +22,7 @@
     "github-markdown-css": "5.8.1",
     "hammerjs": "^2.0.8",
     "marked": "^15.0.12",
+    "pdfjs-dist": "5.7.284",
     "prismjs": "^1.14.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.6.2",

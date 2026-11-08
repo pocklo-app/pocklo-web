@@ -9,11 +9,10 @@ interface Entry {
   id: string;
   name: string;
   folder: boolean;
-  preview: 'image' | 'video' | 'audio' | 'markdown' | 'text' | 'link' | null;
+  preview: 'pdf' | 'image' | 'video' | 'audio' | 'markdown' | 'text' | 'link' | null;
   size: number;
   created_at: string;
   thumbnail: string | null;
-  note?: string;
   location?: string;
 }
 
@@ -34,18 +33,44 @@ interface Share {
   created_at: string;
 }
 
-interface LegacyShare {
-  id: string;
-  name: string;
-  protected: boolean;
-}
-
 interface Preview {
   kind: string;
   url?: string;
   text?: string;
   truncated?: boolean;
 }
+
+const FILE_TYPES: Record<string, { label: string; extensions: string }> = {
+  folder: { label: '目录', extensions: '' },
+  pdf: { label: 'PDF', extensions: 'pdf' },
+  image: { label: '图片', extensions: 'png jpg jpeg gif webp avif heic heif bmp tiff tif ico dng raw cr2 nef arw' },
+  video: { label: '视频', extensions: 'mp4 m4v mov mkv webm avi wmv flv mpeg mpg ts m2ts 3gp' },
+  audio: { label: '音频', extensions: 'mp3 wav flac aac m4a ogg opus aiff wma mid midi' },
+  markdown: { label: 'Markdown', extensions: 'md markdown mdown mdx' },
+  text: { label: '文本', extensions: 'txt log nfo' },
+  link: { label: '链接', extensions: 'url webloc desktop' },
+  document: { label: '文档', extensions: 'doc docx docm odt rtf pages wps' },
+  sheet: { label: '表格', extensions: 'xls xlsx xlsm ods csv tsv numbers et' },
+  slides: { label: '演示文稿', extensions: 'ppt pptx pptm odp key dps' },
+  archive: { label: '压缩包', extensions: 'zip rar 7z tar gz bz2 xz zst tgz tbz tbz2 txz' },
+  code: { label: '源代码', extensions: 'js jsx ts tsx py rb php go rs java kt swift c h cpp hpp cs sh bash zsh ps1 bat sql lua r dart scala vue svelte ipynb' },
+  web: { label: '网页', extensions: 'html htm xhtml css scss sass less mhtml' },
+  data: { label: '数据与配置', extensions: 'json jsonl xml yaml yml toml ini conf cfg env plist parquet arrow avro' },
+  executable: { label: '程序与安装包', extensions: 'exe msi apk aab app pkg deb rpm appimage jar dll so dylib ipa' },
+  font: { label: '字体', extensions: 'ttf otf ttc woff woff2 eot' },
+  ebook: { label: '电子书', extensions: 'epub mobi azw azw3 fb2 cbz cbr' },
+  vector: { label: '矢量图', extensions: 'svg svgz ai eps emfs emf wmf' },
+  design: { label: '设计文件', extensions: 'psd psb sketch fig xd indd idml xcf afdesign' },
+  database: { label: '数据库', extensions: 'db sqlite sqlite3 dbf mdb accdb' },
+  disk: { label: '磁盘映像', extensions: 'iso dmg img vhd vhdx vmdk qcow2' },
+  subtitle: { label: '字幕', extensions: 'srt vtt ass ssa sub' },
+  cad: { label: '3D 与 CAD', extensions: 'dwg dxf step stp iges igs stl obj fbx glb gltf blend 3mf' },
+  file: { label: '文件', extensions: '' },
+};
+const TYPE_BY_EXTENSION = new Map(
+  Object.entries(FILE_TYPES).flatMap(([type, { extensions }]) =>
+    extensions.split(' ').filter(Boolean).map(extension => [extension, type] as const)),
+);
 
 @Component({
   selector: 'app-workspace',
@@ -64,7 +89,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   modalItem: Entry | null = null;
   preview: Preview | null = null;
   shares: Share[] = [];
-  legacyShares: LegacyShare[] = [];
   shareToken = '';
   resourceId = '';
   query = '';
@@ -75,15 +99,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   error = '';
   notice = '';
   previewError = '';
-  legacyKey = '';
-  legacyInput = '';
-  legacyRoot = '';
-  legacyChallenge = false;
-  editor: 'folder' | 'rename' | 'note' | null = null;
+  editor: 'folder' | 'rename' | null = null;
   draft = '';
   cut: Entry | null = null;
   sort: 'name' | 'created_at' | 'size' = 'name';
   ascending = true;
+  view: 'list' | 'grid' = localStorage.getItem('disk.directory-view') === 'grid' ? 'grid' : 'list';
 
   private routeSubscription: Subscription;
   private searchTimer: ReturnType<typeof setTimeout>;
@@ -105,11 +126,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
         clearTimeout(this.searchTimer);
         this.shareToken = params.get('token') || '';
         this.resourceId = (this.shareToken ? query.get('folder') : params.get('res_str_id')) || '';
-        const key = !this.shareToken && query.get('visit_key');
-        if (key) {
-          this.legacyKey = key;
-          this.legacyRoot = this.resourceId;
-        }
         this.section = 'files';
         this.query = '';
         this.data = null;
@@ -129,15 +145,15 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
 
   private credentials() {
     if (this.shareToken) return { share: this.shareToken };
-    return this.legacyKey ? { visit_key: this.legacyKey, legacy_root: this.legacyRoot } : {};
+    return {};
   }
 
   private message(error: any, fallback: string) {
     return error?.error?.msg || (typeof error === 'string' ? error : fallback);
   }
 
-  private async getWorkspace(id: string, query = '', detail = false): Promise<Workspace> {
-    const options = { q: query, detail: detail ? '1' : '' };
+  private async getWorkspace(id: string, query = ''): Promise<Workspace> {
+    const options = { q: query };
     if (this.shareToken) {
       return this.api.get('/api/shares/' + encodeURIComponent(this.shareToken), {
         ...options, resource: id,
@@ -152,7 +168,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     const request = ++this.requestNumber;
     this.loading = true;
     this.error = '';
-    this.legacyChallenge = false;
     try {
       const data = await this.getWorkspace(this.resourceId, this.query.trim());
       if (request !== this.requestNumber) return;
@@ -164,24 +179,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (request !== this.requestNumber) return;
       this.error = this.message(error, '无法连接到浑天匣，请稍后重试。');
-      this.legacyChallenge = !this.shareToken && error?.status === 403;
     } finally {
       if (request === this.requestNumber) this.loading = false;
     }
-  }
-
-  unlockLegacy() {
-    this.legacyKey = this.legacyInput.trim();
-    this.legacyRoot = this.resourceId;
-    if (this.legacyKey) void this.load();
-  }
-
-  updateQuery(query: string) {
-    this.query = query;
-    clearTimeout(this.searchTimer);
-    this.requestNumber++;
-    this.closeInspector();
-    this.searchTimer = setTimeout(() => void this.load(), 250);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -218,10 +218,9 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     this.notice = '';
     this.loading = true;
     try {
-      const { links, legacy } = await this.api.get('/api/shares/');
+      const { links } = await this.api.get('/api/shares/');
       if (request === this.requestNumber) {
         this.shares = links;
-        this.legacyShares = legacy;
       }
     } catch (error) {
       if (request === this.requestNumber) this.error = this.message(error, '无法读取分享列表。');
@@ -233,11 +232,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   select(item: Entry, reveal = true) {
     this.closeInspector();
     this.selected = item;
-    if (item.note == null) {
-      this.getWorkspace(item.id, '', true).then(({ resource }) => {
-        if (this.selected === item && this.editor !== 'note') item.note = resource.note;
-      }).catch(() => {});
-    }
     if (reveal && window.matchMedia('(max-width: 820px)').matches) {
       document.getElementById('drive-inspector')?.scrollIntoView({ block: 'nearest' });
     }
@@ -350,41 +344,22 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
     });
   }
 
-  async revokeLegacyShare(share: LegacyShare) {
-    if (!window.confirm('关闭此资源的旧分享设置？来自上级目录的旧分享仍然有效。')) return;
-    await this.perform(async () => {
-      await this.api.del('/api/shares/legacy/' + encodeURIComponent(share.id));
-      this.legacyShares = this.legacyShares.filter(item => item.id !== share.id);
-      this.notice = '旧分享设置已关闭';
-    });
-  }
-
-  edit(mode: 'folder' | 'rename' | 'note', item?: Entry) {
+  edit(mode: 'folder' | 'rename', item?: Entry) {
     this.editor = mode;
-    this.draft = mode === 'rename' ? item.name : mode === 'note' ? item.note || '' : '';
-    if (mode === 'note' && item.note == null) {
-      const request = this.previewNumber;
-      this.getWorkspace(item.id, '', true).then(data => {
-        if (request === this.previewNumber && this.editor === 'note' && !this.draft) {
-          this.draft = data.resource.note;
-        }
-      }).catch(error => { this.notice = this.message(error, '无法加载原备注。'); });
-    }
+    this.draft = mode === 'rename' ? item.name : '';
   }
 
   async saveEdit() {
     const item = this.selected;
     const mode = this.editor;
-    if (!mode || (mode !== 'note' && !this.draft.trim())) return;
-    const value = mode === 'note' ? this.draft : this.draft.trim();
+    if (!mode || !this.draft.trim()) return;
+    const value = this.draft.trim();
     await this.perform(async () => {
       if (mode === 'folder') {
         await this.resources.create_folder(this.data.resource.id, { folder_name: value });
       } else {
-        await this.api.put('/api/res/' + encodeURIComponent(item.id),
-          mode === 'rename' ? { rname: value } : { description: value });
-        if (mode === 'rename') item.name = value;
-        else item.note = value;
+        await this.api.put('/api/res/' + encodeURIComponent(item.id), { rname: value });
+        item.name = value;
       }
       this.editor = null;
       this.notice = '已保存';
@@ -486,18 +461,24 @@ export class WorkspaceComponent implements OnInit, OnDestroy {
   }
 
   type(item: Entry) {
-    if (item.folder) return '目录';
-    return ({
-      image: '图片', video: '视频', audio: '音频', markdown: 'Markdown',
-      text: '文本', link: '链接',
-    })[item.preview] || '文件';
+    return FILE_TYPES[this.iconType(item)].label;
   }
 
-  glyph(item: Entry) {
-    if (item.folder) return 'icon-folder';
-    return ({
-      image: 'icon-image', video: 'icon-video', audio: 'icon-music', link: 'icon-link',
-    })[item.preview] || 'icon-file';
+  iconType(item: Entry) {
+    if (item.folder) return 'folder';
+    if (item.preview === 'link') return 'link';
+    const extension = item.name.includes('.') ? item.name.split('.').pop().toLowerCase() : '';
+    return TYPE_BY_EXTENSION.get(extension) || item.preview || 'file';
+  }
+
+  setView(view: 'list' | 'grid') {
+    this.view = view;
+    localStorage.setItem('disk.directory-view', view);
+  }
+
+  pdfUrl(item: Entry) {
+    const path = '/api/res/' + encodeURIComponent(item.id) + '/pdf';
+    return this.api.fillUrl(this.shareToken ? path + '?share=' + encodeURIComponent(this.shareToken) : path);
   }
 
   size(item: Entry) {
