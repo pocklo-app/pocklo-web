@@ -1,46 +1,52 @@
 <div class="public-shell">
-  <header class="public-bar">
-    <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
-    <nav aria-label="主导航">
-      <a routerLink="/developer/docs">开发者</a>
-      <a routerLink="/cli">命令行</a>
-      <a *ngIf="userService.has_login; else loginJump" routerLink="/res">我的文件</a>
-      <ng-template #loginJump><button type="button" class="login-jump" (click)="focusLogin()">登录</button></ng-template>
-    </nav>
-  </header>
-  <main class="public-main">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">POCKLO / FILE WORKSPACE</p>
-        <h1>日常文件，<br>随手放进小兜<span>。</span></h1>
-        <p class="intro">把文件和网页链接放进同一处。找得到，打开就能看，想分享时发个链接。</p>
-        <div class="public-actions">
-          <a *ngIf="userService.has_login; else loginOptions" class="primary" routerLink="/res">打开我的文件</a>
-          <ng-template #loginOptions>
-            <button #friendenButton type="button" class="primary" [disabled]="pending" (click)="friendenLogin()">
-              {{pending ? '正在打开友间…' : '使用友间登录'}}
-            </button>
-            <a [href]="qitianUrl">使用齐天簿登录</a>
-          </ng-template>
-          <a routerLink="/cli">查看命令行</a>
+  <div class="public-window">
+    <header class="public-bar">
+      <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
+      <nav aria-label="主导航">
+        <a routerLink="/developer/docs">开发者</a>
+        <a routerLink="/cli">命令行</a>
+        <a *ngIf="userService.has_login; else loginJump" routerLink="/res">我的文件</a>
+        <ng-template #loginJump><button type="button" class="login-jump" (click)="focusLogin()">登录</button></ng-template>
+      </nav>
+    </header>
+    <main class="public-main">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">POCKLO / FILE WORKSPACE</p>
+          <h1>日常文件，<br>随手放进小兜<span>。</span></h1>
+          <p class="intro">把文件和网页链接放进同一处。找得到，打开就能看，想分享时发个链接。</p>
+          <div class="public-actions">
+            <a *ngIf="userService.has_login; else loginOptions" class="primary" routerLink="/res">打开我的文件</a>
+            <ng-template #loginOptions>
+              <button #friendenButton type="button" class="primary" [disabled]="pending" (click)="friendenLogin()">
+                {{pending ? '正在打开友间…' : '使用友间登录'}}
+              </button>
+              <a [href]="qitianUrl">使用齐天簿登录</a>
+            </ng-template>
+            <a routerLink="/cli">查看命令行</a>
+          </div>
+          <p *ngIf="error" class="login-note" role="alert">{{error}}</p>
+          <p *ngIf="!userService.has_login" class="intro login-note">已有齐天簿账号？先用齐天簿登录并绑定友间，之后就能用友间打开原来的文件。</p>
         </div>
-        <p *ngIf="error" class="login-note" role="alert">{{error}}</p>
-        <p *ngIf="!userService.has_login" class="intro login-note">已有齐天簿账号？先用齐天簿登录并绑定友间，之后就能用友间打开原来的文件。</p>
-      </div>
-      <div class="sample" aria-label="文件工作区示例">
-        <div class="sample-header"><strong>我的文件</strong><span class="eyebrow">示例 · 04 项</span></div>
-        <ul>
-          <li><img src="assets/file-types/folder.svg" alt="">项目资料<span>目录</span></li>
-          <li><img src="assets/file-types/pdf.svg" alt="">行程安排.pdf<span>PDF</span></li>
-          <li><img src="assets/file-types/image.svg" alt="">周末照片.jpg<span>图片</span></li>
-          <li><img src="assets/file-types/link.svg" alt="">常用链接<span>链接</span></li>
-        </ul>
-      </div>
-    </section>
-    <section class="public-features" aria-label="小兜的日常用法">
-      <div><p class="eyebrow">01 / ORGANIZE</p><h2>整理</h2><p>列表和缩略图随时切换，在当前目录和子目录里一起搜索。</p></div>
-      <div><p class="eyebrow">02 / PREVIEW</p><h2>预览</h2><p>直接打开图片、视频、PDF、Markdown 和纯文本。</p></div>
-      <div><p class="eyebrow">03 / SHARE</p><h2>分享</h2><p>文件和目录都能发链接，分享后可以随时撤销。</p></div>
-    </section>
-  </main>
+        <div class="sample" aria-label="文件工作区示例">
+          <div class="sample-header"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><strong>我的文件</strong><small>Finder 示例</small></div>
+          <div class="sample-body">
+            <div class="sample-sidebar" aria-hidden="true"><small>个人收藏</small><span>我的文件</span><span>我的分享</span></div>
+            <ul>
+              <li><img src="assets/finder/folder.svg" alt=""><b>项目资料</b><span>目录</span></li>
+              <li><img src="assets/file-types/pdf.svg" alt=""><b>行程安排.pdf</b><span>PDF</span></li>
+              <li><img src="assets/file-types/image.svg" alt=""><b>周末照片.jpg</b><span>图片</span></li>
+              <li><img src="assets/file-types/link.svg" alt=""><b>常用链接</b><span>链接</span></li>
+            </ul>
+          </div>
+          <div class="sample-footer">我的文件 · 4 项</div>
+        </div>
+      </section>
+      <section class="public-features" aria-label="小兜的日常用法">
+        <div><p class="eyebrow">01 / ORGANIZE</p><h2>整理</h2><p>在图标、列表、分栏和连廊之间切换，或同时打开多个窗口整理文件。</p></div>
+        <div><p class="eyebrow">02 / PREVIEW</p><h2>预览</h2><p>直接打开图片、视频、PDF、Markdown 和纯文本。</p></div>
+        <div><p class="eyebrow">03 / SHARE</p><h2>分享</h2><p>文件和目录都能发链接，分享后可以随时撤销。</p></div>
+      </section>
+    </main>
+  </div>
 </div>

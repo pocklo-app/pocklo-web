@@ -1,27 +1,29 @@
 <div class="public-shell">
-  <header class="public-bar">
-    <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
-    <nav aria-label="主导航"><a routerLink="/" >首页</a><a routerLink="/res">我的文件</a></nav>
-  </header>
-  <main class="public-main">
-    <header class="cli-intro">
-      <p class="eyebrow">POCKLO / CLI</p>
-      <h1>在终端打开小兜<span>。</span></h1>
-      <p class="intro">用 <code>pocklo</code> 浏览目录、管理文件，在本地和网盘之间上传下载。</p>
+  <div class="public-window">
+    <header class="public-bar">
+      <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
+      <nav aria-label="主导航"><a routerLink="/developer/docs">开发者</a><a routerLink="/cli" aria-current="page">命令行</a><a routerLink="/res">我的文件</a></nav>
     </header>
-    <div class="cli-layout">
-      <nav class="cli-index" aria-label="命令分类">
-        <a *ngFor="let section of commandSections" [href]="'#' + section.id">{{section.title}}</a>
-      </nav>
-      <div class="cli-sections">
-        <section *ngFor="let section of commandSections; index as i" [id]="section.id" class="cli-panel">
-          <header><p class="eyebrow">0{{i + 1}} / {{section.id}}</p><h2>{{section.title}}</h2><p>{{section.note}}</p></header>
-          <div class="command" *ngFor="let command of section.commands">
-            <span aria-hidden="true">$</span><code class="selectable-preview">{{command}}</code>
-            <button type="button" ngxClipboard [cbContent]="command" (cbOnSuccess)="copyStatus(true)" (cbOnError)="copyStatus(false)" [attr.aria-label]="'复制命令 ' + command">复制</button>
-          </div>
-        </section>
+    <main class="public-main">
+      <header class="cli-intro">
+        <p class="eyebrow">POCKLO / CLI</p>
+        <h1>在终端打开小兜<span>。</span></h1>
+        <p class="intro">用 <code>pocklo</code> 浏览目录、管理文件，在本地和网盘之间上传下载。</p>
+      </header>
+      <div class="cli-layout">
+        <nav class="cli-index" aria-label="命令分类">
+          <a *ngFor="let section of commandSections" [href]="'#' + section.id">{{section.title}}</a>
+        </nav>
+        <div class="cli-sections">
+          <section *ngFor="let section of commandSections; index as i" [id]="section.id" class="cli-panel">
+            <header><p class="eyebrow"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span>　0{{i + 1}} / {{section.id}}</p><h2>{{section.title}}</h2><p>{{section.note}}</p></header>
+            <div class="command" *ngFor="let command of section.commands">
+              <span aria-hidden="true">$</span><code class="selectable-preview">{{command}}</code>
+              <button type="button" ngxClipboard [cbContent]="command" (cbOnSuccess)="copyStatus(true)" (cbOnError)="copyStatus(false)" [attr.aria-label]="'复制命令 ' + command">复制</button>
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
 </div>

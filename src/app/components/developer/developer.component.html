@@ -1,163 +1,166 @@
 <div class="public-shell" [class.finder-embedded]="embedded">
-  <header class="public-bar" *ngIf="!embedded">
-    <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
-    <nav aria-label="开发者导航" *ngIf="mode !== 'consent'">
-      <a routerLink="/developer">开发者</a>
-      <a routerLink="/developer/docs">接入文档</a>
-    </nav>
-  </header>
+  <div class="public-window">
+    <header class="public-bar" *ngIf="!embedded">
+      <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
+      <nav aria-label="开发者导航" *ngIf="mode !== 'consent'">
+        <a routerLink="/developer" [attr.aria-current]="mode === 'applications' ? 'page' : null">开发者</a>
+        <a routerLink="/developer/docs" [attr.aria-current]="mode === 'docs' ? 'page' : null">接入文档</a>
+        <a routerLink="/cli">命令行</a>
+      </nav>
+    </header>
 
-  <main class="public-main dev-main" [class.consent-main]="mode === 'consent'">
-    <p class="eyebrow" *ngIf="!embedded">{{mode === 'consent' ? 'POCKLO / AUTHORIZE' : 'POCKLO / DEVELOPERS'}}</p>
-    <h1 *ngIf="!embedded">{{titles[mode]}}</h1>
-    <p *ngIf="busy" class="status" role="status">处理中…</p>
-    <p *ngIf="error" class="error" role="alert">{{error}}</p>
-    <p *ngIf="message" class="status" role="status">{{message}}</p>
+    <main class="public-main dev-main" [class.consent-main]="mode === 'consent'">
+      <p class="eyebrow" *ngIf="!embedded">{{mode === 'consent' ? 'POCKLO / AUTHORIZE' : 'POCKLO / DEVELOPERS'}}</p>
+      <h1 *ngIf="!embedded">{{titles[mode]}}</h1>
+      <p *ngIf="busy" class="status" role="status">处理中…</p>
+      <p *ngIf="error" class="error" role="alert">{{error}}</p>
+      <p *ngIf="message" class="status" role="status">{{message}}</p>
 
-    <div *ngIf="needsLogin" class="dev-section">
-      <p>登录小兜后继续。</p>
-      <div class="public-actions"><a class="primary" routerLink="/" [queryParams]="{ next: next }">登录小兜</a></div>
-    </div>
-
-    <div *ngIf="mode === 'docs' && docs" class="doc-content"><markdown [data]="docs" [safePreview]="true"></markdown></div>
-
-    <section *ngIf="consent as item" class="dev-section">
-      <p class="intro">应用将使用以下权限访问小兜账号 <strong>{{item.account}}</strong>。</p>
-      <div class="app-identity">
-        <h2>{{item.application.name}}</h2>
-        <a [href]="item.application.website" target="_blank" rel="noopener noreferrer">{{item.application.website}}</a>
-        <p>{{item.application.purpose}}</p>
+      <div *ngIf="needsLogin" class="dev-section">
+        <p>登录小兜后继续。</p>
+        <div class="public-actions"><a class="primary" routerLink="/" [queryParams]="{ next: next }">登录小兜</a></div>
       </div>
-      <ul class="permission-list">
-        <li *ngIf="hasScope(item.scope, 'files.read')"><strong>读取文件</strong><span>浏览和搜索目录，读取文件信息，并下载文件。</span></li>
-        <li *ngIf="hasScope(item.scope, 'shares.create')"><strong>创建分享链接</strong><span>为你的文件或目录创建链接。持有链接的人可以查看和下载共享内容。</span></li>
-      </ul>
-      <p class="status">授权结果将返回 {{callbackHost}}。你可以在账号设置中随时撤销。</p>
-      <div class="public-actions">
-        <button type="button" [disabled]="busy" (click)="decide(false)">拒绝</button>
-        <button type="button" class="primary" [disabled]="busy" (click)="decide(true)">同意授权</button>
-      </div>
-    </section>
 
-    <ng-container *ngIf="mode === 'admin'">
-      <form *ngIf="!admin; else adminSession" class="dev-section dev-form" (ngSubmit)="adminLogin()">
-        <h2>管理员登录</h2>
-        <label>管理员邮箱<input name="adminEmail" [(ngModel)]="adminEmail" type="email" autocomplete="username" required></label>
-        <label>验证方式
-          <select name="adminMethod" [(ngModel)]="adminMethod">
-            <option value="email">邮箱验证码</option>
-            <option value="totp">MFA 动态口令</option>
-            <option value="recovery">一次性恢复码</option>
-          </select>
-        </label>
-        <label>{{adminMethod === 'recovery' ? '恢复码' : '验证码'}}
-          <input name="adminCode" [(ngModel)]="adminCode" [attr.inputmode]="adminMethod === 'recovery' ? 'text' : 'numeric'" autocomplete="one-time-code" required>
-        </label>
+      <div *ngIf="mode === 'docs' && docs" class="doc-content selectable-preview"><markdown [data]="docs" [safePreview]="true"></markdown></div>
+
+      <section *ngIf="consent as item" class="dev-section">
+        <p class="intro">应用将使用以下权限访问小兜账号 <strong>{{item.account}}</strong>。</p>
+        <div class="app-identity">
+          <h2>{{item.application.name}}</h2>
+          <a [href]="item.application.website" target="_blank" rel="noopener noreferrer">{{item.application.website}}</a>
+          <p>{{item.application.purpose}}</p>
+        </div>
+        <ul class="permission-list">
+          <li *ngIf="hasScope(item.scope, 'files.read')"><strong>读取文件</strong><span>浏览和搜索目录，读取文件信息，并下载文件。</span></li>
+          <li *ngIf="hasScope(item.scope, 'shares.create')"><strong>创建分享链接</strong><span>为你的文件或目录创建链接。持有链接的人可以查看和下载共享内容。</span></li>
+        </ul>
+        <p class="status">授权结果将返回 {{callbackHost}}。你可以在账号设置中随时撤销。</p>
         <div class="public-actions">
-          <button type="submit" class="primary" [disabled]="busy">登录</button>
-          <button type="button" *ngIf="adminMethod === 'email'" [disabled]="busy || !adminEmail.trim()" (click)="sendAdminCode()">发送验证码</button>
+          <button type="button" [disabled]="busy" (click)="decide(false)">拒绝</button>
+          <button type="button" class="primary" [disabled]="busy" (click)="decide(true)">同意授权</button>
         </div>
-      </form>
-      <ng-template #adminSession>
-        <div class="dev-section">
-          <div class="app-head"><h2>{{admin.email}}</h2><span>{{admin.mfa_enabled ? 'MFA 已启用' : '邮箱验证'}}</span></div>
-          <div class="public-actions">
-            <button type="button" *ngIf="!admin.mfa_enabled && !mfa" [disabled]="busy" (click)="setupMfa()">启用 MFA</button>
-            <button type="button" [disabled]="busy" (click)="adminLogout()">退出管理员</button>
-          </div>
-        </div>
-        <form *ngIf="mfa" class="dev-section dev-form" (ngSubmit)="confirmMfa()">
-          <h2>绑定验证器</h2>
-          <p class="status">在验证器中添加基于时间的账号，输入下方密钥，再填入生成的六位动态口令。</p>
-          <label>验证器密钥<input readonly [value]="mfa.secret" (focus)="$any($event.target).select()"></label>
-          <label>动态口令<input name="mfaCode" [(ngModel)]="mfaCode" inputmode="numeric" autocomplete="one-time-code" required></label>
-          <div class="public-actions"><button type="submit" class="primary" [disabled]="busy">确认启用 MFA</button></div>
-        </form>
-        <section *ngIf="recoveryCodes.length" class="dev-section secret">
-          <h2>保存一次性恢复码</h2>
-          <p>这些恢复码只展示一次。验证器不可用时，每条可用于登录一次。</p>
-          <textarea readonly rows="8" [value]="recoveryCodes.join('\n')" (focus)="$any($event.target).select()" aria-label="恢复码"></textarea>
-          <div class="public-actions"><button type="button" (click)="recoveryCodes = []">关闭恢复码</button></div>
-        </section>
-      </ng-template>
-    </ng-container>
-
-    <ng-container *ngIf="!needsLogin && (mode === 'applications' || (mode === 'admin' && admin))">
-      <p class="intro" *ngIf="mode === 'applications'">注册应用，申请访问文件或创建分享链接。</p>
-      <div class="public-actions">
-        <button *ngIf="mode === 'applications' && !registering" class="primary" type="button" [disabled]="busy" (click)="registering = true">创建应用</button>
-        <a *ngIf="mode === 'applications'" routerLink="/developer/admin">管理员入口</a>
-        <a *ngIf="mode === 'applications'" routerLink="/account/applications">已授权应用</a>
-      </div>
-      <form *ngIf="registering" class="dev-section dev-form" (ngSubmit)="register()">
-        <h2>创建应用</h2>
-        <label>应用名称<input name="name" [(ngModel)]="form.name" required maxlength="80"></label>
-        <label>应用网站（HTTPS）<input name="website" type="url" [(ngModel)]="form.website" required maxlength="500"></label>
-        <label>用途说明<textarea name="purpose" [(ngModel)]="form.purpose" required maxlength="500" rows="3"></textarea></label>
-        <label>回调地址（HTTPS，每行一个）<textarea name="redirects" [(ngModel)]="form.redirects" required rows="3" spellcheck="false"></textarea></label>
-        <label class="check"><input type="checkbox" name="sharing" [(ngModel)]="form.requestSharing">同时申请创建分享链接权限</label>
-        <div class="public-actions">
-          <button type="submit" class="primary" [disabled]="busy">注册应用</button>
-          <button type="button" [disabled]="busy" (click)="registering = false">取消</button>
-        </div>
-      </form>
-
-      <section class="dev-section secret" *ngIf="secret as credential">
-        <h2>保存应用凭据</h2>
-        <p>客户端密钥只展示一次，请存入应用服务端。</p>
-        <label>Client ID<input readonly [value]="credential.clientId" (focus)="$any($event.target).select()"></label>
-        <label>Client secret<input readonly [value]="credential.value" (focus)="$any($event.target).select()" autocomplete="off"></label>
-        <div class="public-actions"><button type="button" (click)="secret = null">关闭凭据</button></div>
       </section>
 
-      <p class="status dev-section" *ngIf="!busy && !error && !applications.length">暂无应用。</p>
-      <article class="dev-section" *ngFor="let app of applications">
-        <div class="app-head"><h2>{{app.name}}</h2><span>{{app.enabled ? reviewLabels[app.review] : '已停用'}}</span></div>
-        <p>{{app.purpose}}</p>
-        <p class="status" *ngIf="app.review_reason">审批意见 · {{app.review_reason}}</p>
-        <label *ngIf="mode === 'applications'" class="client-id">Client ID<input readonly [value]="app.client_id" (focus)="$any($event.target).select()"></label>
-        <ng-container *ngIf="mode === 'admin'">
-          <p class="status">开发者 #{{app.developer_id}} · {{app.website}}</p>
-          <ul class="callbacks"><li *ngFor="let uri of app.redirect_uris">{{uri}}</li></ul>
-        </ng-container>
-
-        <div *ngIf="editing?.client_id !== app.client_id" class="public-actions">
-          <button type="button" [disabled]="busy" (click)="edit(app)">{{mode === 'admin' ? '管理应用' : '应用设置'}}</button>
-        </div>
-
-        <div *ngIf="editing?.client_id === app.client_id" class="dev-form settings">
-          <ng-container *ngIf="mode === 'applications'; else adminActions">
-            <label>回调地址（HTTPS，每行一个）<textarea rows="3" [(ngModel)]="redirectInput" spellcheck="false"></textarea></label>
-            <p class="status">修改回调会使现有授权失效。已获准的分享权限须重新审批。</p>
+      <ng-container *ngIf="mode === 'admin'">
+        <form *ngIf="!admin; else adminSession" class="dev-section dev-form" (ngSubmit)="adminLogin()">
+          <h2>管理员登录</h2>
+          <label>管理员邮箱<input name="adminEmail" [(ngModel)]="adminEmail" type="email" autocomplete="username" required></label>
+          <label>验证方式
+            <select name="adminMethod" [(ngModel)]="adminMethod">
+              <option value="email">邮箱验证码</option>
+              <option value="totp">MFA 动态口令</option>
+              <option value="recovery">一次性恢复码</option>
+            </select>
+          </label>
+          <label>{{adminMethod === 'recovery' ? '恢复码' : '验证码'}}
+            <input name="adminCode" [(ngModel)]="adminCode" [attr.inputmode]="adminMethod === 'recovery' ? 'text' : 'numeric'" autocomplete="one-time-code" required>
+          </label>
+          <div class="public-actions">
+            <button type="submit" class="primary" [disabled]="busy">登录</button>
+            <button type="button" *ngIf="adminMethod === 'email'" [disabled]="busy || !adminEmail.trim()" (click)="sendAdminCode()">发送验证码</button>
+          </div>
+        </form>
+        <ng-template #adminSession>
+          <div class="dev-section">
+            <div class="app-head"><h2>{{admin.email}}</h2><span>{{admin.mfa_enabled ? 'MFA 已启用' : '邮箱验证'}}</span></div>
             <div class="public-actions">
-              <button type="button" [disabled]="busy" (click)="update(app, 'configure')">保存回调</button>
-              <button type="button" [disabled]="busy" (click)="update(app, 'rotate_secret')">重置密钥</button>
-              <button type="button" *ngIf="app.review !== 'approved' && app.review !== 'pending'" [disabled]="busy" (click)="update(app, 'request_sharing')">申请创建分享</button>
-              <button type="button" [disabled]="busy" (click)="editing = null">关闭</button>
+              <button type="button" *ngIf="!admin.mfa_enabled && !mfa" [disabled]="busy" (click)="setupMfa()">启用 MFA</button>
+              <button type="button" [disabled]="busy" (click)="adminLogout()">退出管理员</button>
             </div>
+          </div>
+          <form *ngIf="mfa" class="dev-section dev-form" (ngSubmit)="confirmMfa()">
+            <h2>绑定验证器</h2>
+            <p class="status">在验证器中添加基于时间的账号，输入下方密钥，再填入生成的六位动态口令。</p>
+            <label>验证器密钥<input readonly [value]="mfa.secret" (focus)="$any($event.target).select()"></label>
+            <label>动态口令<input name="mfaCode" [(ngModel)]="mfaCode" inputmode="numeric" autocomplete="one-time-code" required></label>
+            <div class="public-actions"><button type="submit" class="primary" [disabled]="busy">确认启用 MFA</button></div>
+          </form>
+          <section *ngIf="recoveryCodes.length" class="dev-section secret">
+            <h2>保存一次性恢复码</h2>
+            <p>这些恢复码只展示一次。验证器不可用时，每条可用于登录一次。</p>
+            <textarea readonly rows="8" [value]="recoveryCodes.join('\n')" (focus)="$any($event.target).select()" aria-label="恢复码"></textarea>
+            <div class="public-actions"><button type="button" (click)="recoveryCodes = []">关闭恢复码</button></div>
+          </section>
+        </ng-template>
+      </ng-container>
+
+      <ng-container *ngIf="!needsLogin && (mode === 'applications' || (mode === 'admin' && admin))">
+        <p class="intro" *ngIf="mode === 'applications'">注册应用，申请访问文件或创建分享链接。</p>
+        <div class="public-actions">
+          <button *ngIf="mode === 'applications' && !registering" class="primary" type="button" [disabled]="busy" (click)="registering = true">创建应用</button>
+          <a *ngIf="mode === 'applications'" routerLink="/developer/admin">管理员入口</a>
+          <a *ngIf="mode === 'applications'" routerLink="/account/applications">已授权应用</a>
+        </div>
+        <form *ngIf="registering" class="dev-section dev-form" (ngSubmit)="register()">
+          <h2>创建应用</h2>
+          <label>应用名称<input name="name" [(ngModel)]="form.name" required maxlength="80"></label>
+          <label>应用网站（HTTPS）<input name="website" type="url" [(ngModel)]="form.website" required maxlength="500"></label>
+          <label>用途说明<textarea name="purpose" [(ngModel)]="form.purpose" required maxlength="500" rows="3"></textarea></label>
+          <label>回调地址（HTTPS，每行一个）<textarea name="redirects" [(ngModel)]="form.redirects" required rows="3" spellcheck="false"></textarea></label>
+          <label class="check"><input type="checkbox" name="sharing" [(ngModel)]="form.requestSharing">同时申请创建分享链接权限</label>
+          <div class="public-actions">
+            <button type="submit" class="primary" [disabled]="busy">注册应用</button>
+            <button type="button" [disabled]="busy" (click)="registering = false">取消</button>
+          </div>
+        </form>
+
+        <section class="dev-section secret" *ngIf="secret as credential">
+          <h2>保存应用凭据</h2>
+          <p>客户端密钥只展示一次，请存入应用服务端。</p>
+          <label>Client ID<input readonly [value]="credential.clientId" (focus)="$any($event.target).select()"></label>
+          <label>Client secret<input readonly [value]="credential.value" (focus)="$any($event.target).select()" autocomplete="off"></label>
+          <div class="public-actions"><button type="button" (click)="secret = null">关闭凭据</button></div>
+        </section>
+
+        <p class="status dev-section" *ngIf="!busy && !error && !applications.length">暂无应用。</p>
+        <article class="dev-section" *ngFor="let app of applications">
+          <div class="app-head"><h2>{{app.name}}</h2><span>{{app.enabled ? reviewLabels[app.review] : '已停用'}}</span></div>
+          <p>{{app.purpose}}</p>
+          <p class="status" *ngIf="app.review_reason">审批意见 · {{app.review_reason}}</p>
+          <label *ngIf="mode === 'applications'" class="client-id">Client ID<input readonly [value]="app.client_id" (focus)="$any($event.target).select()"></label>
+          <ng-container *ngIf="mode === 'admin'">
+            <p class="status">开发者 #{{app.developer_id}} · {{app.website}}</p>
+            <ul class="callbacks"><li *ngFor="let uri of app.redirect_uris">{{uri}}</li></ul>
           </ng-container>
-          <ng-template #adminActions>
-            <label>审批意见（拒绝时必填）<textarea rows="2" maxlength="500" [(ngModel)]="reviewReason"></textarea></label>
-            <div class="public-actions">
-              <button type="button" *ngIf="app.review === 'pending'" [disabled]="busy" (click)="update(app, 'approve')">批准分享权限</button>
-              <button type="button" *ngIf="app.review === 'pending'" [disabled]="busy || !reviewReason.trim()" (click)="update(app, 'reject')">拒绝</button>
-              <button type="button" *ngIf="app.review === 'approved'" [disabled]="busy" (click)="update(app, 'revoke_sharing')">撤销分享权限</button>
-              <button type="button" [disabled]="busy" (click)="update(app, app.enabled ? 'disable' : 'enable')">{{app.enabled ? '停用应用' : '启用应用'}}</button>
-              <button type="button" [disabled]="busy" (click)="editing = null">关闭</button>
-            </div>
-          </ng-template>
-        </div>
-      </article>
-    </ng-container>
 
-    <ng-container *ngIf="mode === 'grants' && !needsLogin">
-      <p class="intro">管理可访问小兜文件的第三方应用。</p>
-      <p class="status dev-section" *ngIf="!busy && !error && !grants.length">暂无授权。</p>
-      <article class="dev-section" *ngFor="let grant of grants">
-        <div class="app-head"><h2>{{grant.name}}</h2><span>{{grant.active ? '已授权' : '已失效'}}</span></div>
-        <p class="status">{{hasScope(grant.scope, 'files.read') ? '读取文件' : ''}}{{hasScope(grant.scope, 'files.read') && hasScope(grant.scope, 'shares.create') ? ' · ' : ''}}{{hasScope(grant.scope, 'shares.create') ? '创建分享链接' : ''}}</p>
-        <div class="public-actions" *ngIf="grant.active"><button type="button" [disabled]="busy" (click)="revoke(grant)">撤销授权</button></div>
-      </article>
-    </ng-container>
-  </main>
+          <div *ngIf="editing?.client_id !== app.client_id" class="public-actions">
+            <button type="button" [disabled]="busy" (click)="edit(app)">{{mode === 'admin' ? '管理应用' : '应用设置'}}</button>
+          </div>
+
+          <div *ngIf="editing?.client_id === app.client_id" class="dev-form settings">
+            <ng-container *ngIf="mode === 'applications'; else adminActions">
+              <label>回调地址（HTTPS，每行一个）<textarea rows="3" [(ngModel)]="redirectInput" spellcheck="false"></textarea></label>
+              <p class="status">修改回调会使现有授权失效。已获准的分享权限须重新审批。</p>
+              <div class="public-actions">
+                <button type="button" [disabled]="busy" (click)="update(app, 'configure')">保存回调</button>
+                <button type="button" [disabled]="busy" (click)="update(app, 'rotate_secret')">重置密钥</button>
+                <button type="button" *ngIf="app.review !== 'approved' && app.review !== 'pending'" [disabled]="busy" (click)="update(app, 'request_sharing')">申请创建分享</button>
+                <button type="button" [disabled]="busy" (click)="editing = null">关闭</button>
+              </div>
+            </ng-container>
+            <ng-template #adminActions>
+              <label>审批意见（拒绝时必填）<textarea rows="2" maxlength="500" [(ngModel)]="reviewReason"></textarea></label>
+              <div class="public-actions">
+                <button type="button" *ngIf="app.review === 'pending'" [disabled]="busy" (click)="update(app, 'approve')">批准分享权限</button>
+                <button type="button" *ngIf="app.review === 'pending'" [disabled]="busy || !reviewReason.trim()" (click)="update(app, 'reject')">拒绝</button>
+                <button type="button" *ngIf="app.review === 'approved'" [disabled]="busy" (click)="update(app, 'revoke_sharing')">撤销分享权限</button>
+                <button type="button" [disabled]="busy" (click)="update(app, app.enabled ? 'disable' : 'enable')">{{app.enabled ? '停用应用' : '启用应用'}}</button>
+                <button type="button" [disabled]="busy" (click)="editing = null">关闭</button>
+              </div>
+            </ng-template>
+          </div>
+        </article>
+      </ng-container>
+
+      <ng-container *ngIf="mode === 'grants' && !needsLogin">
+        <p class="intro">管理可访问小兜文件的第三方应用。</p>
+        <p class="status dev-section" *ngIf="!busy && !error && !grants.length">暂无授权。</p>
+        <article class="dev-section" *ngFor="let grant of grants">
+          <div class="app-head"><h2>{{grant.name}}</h2><span>{{grant.active ? '已授权' : '已失效'}}</span></div>
+          <p class="status">{{hasScope(grant.scope, 'files.read') ? '读取文件' : ''}}{{hasScope(grant.scope, 'files.read') && hasScope(grant.scope, 'shares.create') ? ' · ' : ''}}{{hasScope(grant.scope, 'shares.create') ? '创建分享链接' : ''}}</p>
+          <div class="public-actions" *ngIf="grant.active"><button type="button" [disabled]="busy" (click)="revoke(grant)">撤销授权</button></div>
+        </article>
+      </ng-container>
+    </main>
+  </div>
 </div>
