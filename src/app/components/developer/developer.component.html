@@ -1,5 +1,5 @@
-<div class="public-shell">
-  <header class="public-bar">
+<div class="public-shell" [class.finder-embedded]="embedded">
+  <header class="public-bar" *ngIf="!embedded">
     <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
     <nav aria-label="开发者导航" *ngIf="mode !== 'consent'">
       <a routerLink="/developer">开发者</a>
@@ -8,8 +8,8 @@
   </header>
 
   <main class="public-main dev-main" [class.consent-main]="mode === 'consent'">
-    <p class="eyebrow">{{mode === 'consent' ? 'POCKLO / AUTHORIZE' : 'POCKLO / DEVELOPERS'}}</p>
-    <h1>{{titles[mode]}}</h1>
+    <p class="eyebrow" *ngIf="!embedded">{{mode === 'consent' ? 'POCKLO / AUTHORIZE' : 'POCKLO / DEVELOPERS'}}</p>
+    <h1 *ngIf="!embedded">{{titles[mode]}}</h1>
     <p *ngIf="busy" class="status" role="status">处理中…</p>
     <p *ngIf="error" class="error" role="alert">{{error}}</p>
     <p *ngIf="message" class="status" role="status">{{message}}</p>

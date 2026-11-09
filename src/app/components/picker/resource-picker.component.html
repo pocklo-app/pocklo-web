@@ -1,0 +1,59 @@
+<main class="picker">
+  <header>
+    <img src="assets/pocklo.svg" alt="" width="40" height="40">
+    <div><h1>从小兜选择资源</h1><p *ngIf="hostOrigin">{{hostOrigin}}</p></div>
+  </header>
+
+  <section *ngIf="!hostOrigin" class="message" role="status">
+    {{disconnected ? '与宿主网页的连接已断开，请返回网页重新打开选择器。' : '正在连接宿主网页…'}}
+  </section>
+  <section *ngIf="hostOrigin && !sessionReady" class="message" role="status">正在读取登录状态…</section>
+  <section *ngIf="hostOrigin && sessionReady && !signedIn" class="message">
+    <p>登录后可以选择自己的资源。</p>
+    <a class="primary" [routerLink]="['/']" [queryParams]="{ next: loginPath }">登录小兜</a>
+  </section>
+
+  <ng-container *ngIf="hostOrigin && signedIn">
+    <nav *ngIf="listing" aria-label="当前位置">
+      <button type="button" *ngFor="let part of listing.breadcrumbs; let last = last" [disabled]="sharing"
+        [attr.aria-current]="last ? 'location' : null" (click)="openDirectory(part.id)">{{part.name}}</button>
+    </nav>
+    <label class="search"><span aria-hidden="true">⌕</span><input type="search" [ngModel]="query" (ngModelChange)="search($event)"
+      maxlength="256" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录" [disabled]="sharing"></label>
+
+    <section class="results" aria-label="资源列表" [attr.aria-busy]="loading">
+      <p class="message" *ngIf="loading" role="status">正在读取…</p>
+      <p class="message" *ngIf="!loading && listing && !listing.entries.length">{{query.trim() ? '没有匹配的资源。' : '这个文件夹是空的。'}}</p>
+      <div *ngIf="!loading">
+        <div class="entry" *ngFor="let item of listing?.entries; trackBy: trackItem" [class.selected]="selected?.id === item.id">
+          <button class="pick" type="button" [attr.aria-pressed]="selected?.id === item.id" [disabled]="sharing"
+            (click)="selected = item" (dblclick)="item.folder && openDirectory(item.id)">
+            <img [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + (item.preview || 'file') + '.svg'" width="22" height="22" alt="">
+            <span><strong>{{item.name}}</strong><small *ngIf="item.location">{{item.location}}</small></span>
+          </button>
+          <button class="open" *ngIf="item.folder" type="button" [attr.aria-label]="'打开文件夹 ' + item.name"
+            [disabled]="sharing" (click)="openDirectory(item.id)">›</button>
+        </div>
+      </div>
+      <p *ngIf="listing?.has_more && !loading" class="message">仅显示前 100 个结果，请缩小搜索范围。</p>
+    </section>
+    <p class="message error" *ngIf="error" role="alert">{{error}}
+      <button type="button" *ngIf="!listing" (click)="load()">重试</button>
+    </p>
+    <p class="message" *ngIf="result" role="status">分享链接已创建。<a [href]="result">{{result}}</a></p>
+  </ng-container>
+
+  <footer>
+    <div class="selection" *ngIf="selected">
+      <strong [title]="selected.name">{{selected.name}}</strong>
+      <p>{{selected.folder ? '持有链接的人可查看此文件夹及其子资源。' : '持有链接的人可查看此资源。'}}</p>
+    </div>
+    <div class="actions">
+      <button type="button" [disabled]="sharing" (click)="cancel()">取消</button>
+      <button class="primary" *ngIf="hostOrigin && signedIn" type="button"
+        [disabled]="!selected || !listing?.can_manage || loading || sharing || !!result" (click)="share()">
+        {{sharing ? '正在创建…' : '创建分享链接'}}
+      </button>
+    </div>
+  </footer>
+</main>

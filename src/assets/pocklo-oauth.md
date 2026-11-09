@@ -1,5 +1,39 @@
 小兜 OAuth 让应用在用户同意后读取小兜文件，或代表用户创建分享链接。面向有服务端的 Web 应用。OAuth 回调和令牌交换都应由你的服务端处理。
 
+## 嵌入资源选择器
+
+网页可以通过 iframe 加入「从小兜选择资源」按钮。用户在小兜窗口登录、搜索和确认分享后，宿主网页只接收本次创建的分享链接。这个流程不需要注册 OAuth 应用或填写密钥。分享可以在小兜的「我的分享」中撤销。
+
+下面示例将宿主网页的准确 origin 传给选择器，并检查返回消息的来源。生产宿主使用 HTTPS，本机测试支持 HTTP 回环地址。
+
+```html
+<iframe id="pocklo-picker" title="从小兜选择资源" width="100%" height="105"
+  style="border:0" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+</iframe>
+<a id="pocklo-share" hidden>查看分享</a>
+<script>
+  const origin = 'https://pocklo.jyonn.space';
+  const frame = document.getElementById('pocklo-picker');
+  const link = document.getElementById('pocklo-share');
+  window.addEventListener('message', (event) => {
+    if (event.origin !== origin || event.source !== frame.contentWindow ||
+        event.data?.version !== 1) return;
+
+    if (event.data.type === 'pocklo.picker.ready') {
+      frame.contentWindow.postMessage({ type: 'pocklo.picker.init', version: 1 }, origin);
+    } else if (event.data.type === 'pocklo.picker.selected') {
+      const url = new URL(event.data.url);
+      if (url.origin !== origin || !url.pathname.startsWith('/share/')) return;
+      link.href = url.href;
+      link.hidden = false;
+    }
+  });
+  frame.src = origin + '/assets/picker/index.html?origin=' + encodeURIComponent(location.origin);
+</script>
+```
+
+选择器也会发送 `pocklo.picker.cancelled` 和 `pocklo.picker.error`，方便宿主处理取消或弹窗被拦截。请让用户点击 iframe 内的按钮来开启小兜窗口。宿主需允许嵌入小兜来源并允许弹窗。若站点的浏览器隔离策略切断了弹窗与开启者的连接，选择器会显示连接中断。
+
 ## 注册应用
 
 在[开发者平台](/developer)登录小兜，填写名称、网站、用途和精确的 HTTPS 回调地址。可以登记多个回调，禁止通配符和 URL 片段。保存 Client ID 和 Client secret。密钥只展示一次，请存入服务端。需要公开分享时，在开发者平台申请「创建分享链接」，通过小兜管理员审批后再发起用户授权。

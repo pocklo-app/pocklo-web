@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { BaseService } from '../../services/base.service';
@@ -51,11 +51,13 @@ const errors: Record<string, string> = {
 };
 
 @Component({
+  selector: 'app-developer',
   templateUrl: './developer.component.html',
   styleUrls: ['../../../assets/css/pocklo-pages.less', './developer.component.less'],
 })
 export class DeveloperComponent implements OnInit {
-  mode = this.route.snapshot.data['mode'] as string;
+  @Input() embedded = false;
+  @Input() mode = this.route.snapshot.data['mode'] as string;
   requestId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('request');
   next = this.router.url;
   busy = false;

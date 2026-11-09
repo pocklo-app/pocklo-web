@@ -1,3 +1,4 @@
+import { ResourcePickerComponent } from './components/picker/resource-picker.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { HAMMER_GESTURE_CONFIG, HammerGestureConfig } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
@@ -9,6 +10,7 @@ import { AppComponent } from './app.component';
 
 import { AppRoutingModule } from "./app-routing.module";
 import { PdfPreviewComponent } from "./components/shared/pdf-preview.component";
+import { WorkspaceDesktopComponent } from "./components/workspace/workspace-desktop.component";
 import { WorkspaceComponent } from "./components/workspace/workspace.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
 
@@ -45,6 +47,8 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     HomeComponent,
     CliComponent,
     WorkspaceComponent,
+    ResourcePickerComponent,
+    WorkspaceDesktopComponent,
     PdfPreviewComponent,
     ResHomeComponent,
     LoadingComponent,

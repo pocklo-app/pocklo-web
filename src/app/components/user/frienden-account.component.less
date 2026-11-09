@@ -29,3 +29,21 @@
   cursor: pointer;
 }
 .account-panel button:disabled { opacity: .55; cursor: default; }
+
+.finder-settings {
+  --canvas: #f6f6f8; --rail: #f6f6f8; --panel: #fff; --line: #e1e1e5;
+  --ink: #28282d; --muted: #69696e; --accent: #0064dc; --hover: #ededf0;
+}
+.finder-settings .public-bar { background: #ffffffb8; backdrop-filter: blur(20px) saturate(140%); }
+.finder-settings .account-main { max-width: 720px; padding: 24px clamp(12px, 4vw, 44px); }
+.finder-settings .account-main h1 { font-size: clamp(23px, 4vw, 32px); letter-spacing: -.02em; }
+.finder-settings .account-panel { border-radius: 13px; background: #fff; box-shadow: 0 6px 18px #20202b09; }
+.finder-settings .account-error { color: #ad2832; }
+.finder-settings .public-actions .primary { color: #fff; }
+.finder-settings .public-actions .primary:hover { background: #075bc2; }
+.finder-settings.embedded { min-height: 0; background: transparent; }
+.finder-settings.embedded .account-main { margin-inline: auto; }
+.account-tabs { display: flex; align-items: center; justify-content: flex-start; gap: 5px; width: auto; height: auto; margin-block: 8px 15px; }
+.account-tabs button { color: #424249; padding: 6px 10px; font-size: 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: pointer; }
+.account-tabs button[aria-pressed="true"] { color: #23232a; border-color: #dedee4; background: #fff; font-weight: 650; }
+.account-tabs .account-logout { margin-inline-start: auto; color: #a22931; }

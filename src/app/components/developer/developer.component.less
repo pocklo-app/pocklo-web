@@ -32,3 +32,10 @@ input[readonly], .doc-content { user-select: text; -webkit-user-select: text; }
 :host ::ng-deep .doc-content .markdown-body { background: transparent; color: var(--ink); color-scheme: dark; }
 :host ::ng-deep .doc-content pre { background: var(--panel); overflow: auto; }
 :host ::ng-deep .doc-content a { color: var(--accent); }
+
+.finder-embedded {
+  --canvas: #f6f6f8; --rail: #f6f6f8; --panel: #fff; --line: #e1e1e5;
+  --ink: #28282d; --muted: #69696e; --accent: #0064dc; --hover: #ededf0;
+  min-height: 0; background: #fff; border: 1px solid var(--line); border-radius: 13px;
+}
+.finder-embedded .public-main { padding: 16px; }

@@ -24,6 +24,7 @@
     "marked": "^15.0.12",
     "pdfjs-dist": "5.7.284",
     "prismjs": "^1.14.0",
+    "qrcode-generator": "^2.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.6.2",
     "zone.js": "~0.14.3"

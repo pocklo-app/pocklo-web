@@ -1,0 +1,24 @@
+:host { display: block; }
+.desktop {
+  height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+.surface { position: relative; flex: 1; min-height: 0; isolation: isolate; overflow: clip; }
+.stacked .surface { background: radial-gradient(ellipse at 30% 0%, #f3f4f7, #dde0e7 90%); }
+.window, .window app-workspace { display: block; width: 100%; height: 100%; }
+.stacked .window { position: absolute; inset: 0 auto auto 0; }
+.dragging { cursor: grabbing; }
+.snap-guide {
+  position: absolute;
+  z-index: 2147483647;
+  pointer-events: none;
+  border: 2px solid #2073d99c;
+  border-radius: 21px;
+  background: #3185ed2b;
+  box-shadow: inset 0 0 0 1px #fffa;
+}
+
+.stacked.narrow .surface { overflow: auto; padding: 7px; }
+.stacked.narrow .window { position: relative; height: max(320px, 48dvh); margin-bottom: 7px; }

@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { BaseService } from '../../services/base.service';
@@ -9,6 +9,7 @@ import { FRIENDEN_LOGIN_KEY, loginDestination } from '../../services/login-navig
 
 const BINDING_API = '/api/oauth/frienden/binding';
 const STATE_KEY = 'pocklo.frienden.binding.state';
+const RETURN_KEY = 'pocklo.frienden.binding.return';
 
 interface FriendenStatus {
   linked: boolean;
@@ -17,10 +18,15 @@ interface FriendenStatus {
 }
 
 @Component({
+  selector: 'app-frienden-account',
   templateUrl: './frienden-account.component.html',
   styleUrls: ['../../../assets/css/pocklo-pages.less', './frienden-account.component.less'],
 })
 export class FriendenAccountComponent implements OnInit {
+  @Input() embedded = false;
+  @Input() returnResource: string | null = null;
+  showGrants = false;
+
   status: FriendenStatus | null = null;
   pending = false;
   error = '';
@@ -43,7 +49,8 @@ export class FriendenAccountComponent implements OnInit {
     sessionStorage.removeItem(STATE_KEY);
     sessionStorage.removeItem(FRIENDEN_LOGIN_KEY);
     this.user.exit();
-    window.location.replace('/');
+    sessionStorage.removeItem(RETURN_KEY);
+    void this.router.navigateByUrl('/', { replaceUrl: true });
   }
 
   async ngOnInit() {
@@ -61,7 +68,14 @@ export class FriendenAccountComponent implements OnInit {
     try {
       if (callback) {
         try {
+          const returnResource = sessionStorage.getItem(RETURN_KEY);
+          sessionStorage.removeItem(RETURN_KEY);
           await this.complete(params.get('state'), params.get('code'));
+          if (returnResource && /^[a-z0-9]+$/i.test(returnResource)) {
+            await this.router.navigate(['/res', returnResource], { queryParams: { settings: '1' }, replaceUrl: true,
+              state: { accountMessage: this.message } });
+            return;
+          }
         } catch (error) {
           this.error = this.errorMessage(error);
         }
@@ -81,6 +95,8 @@ export class FriendenAccountComponent implements OnInit {
     try {
       const { url, state } = await this.api.post(BINDING_API, {});
       sessionStorage.setItem(STATE_KEY, state);
+      if (this.returnResource) sessionStorage.setItem(RETURN_KEY, this.returnResource);
+      else sessionStorage.removeItem(RETURN_KEY);
       window.location.assign(url);
     } catch (error) {
       this.error = this.errorMessage(error);

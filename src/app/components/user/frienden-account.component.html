@@ -1,5 +1,5 @@
-<div class="public-shell">
-  <header class="public-bar">
+<div class="public-shell finder-settings" [class.embedded]="embedded">
+  <header class="public-bar" *ngIf="!embedded">
     <a class="public-brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜 <small>Pocklo</small></span></a>
     <nav aria-label="主导航">
       <a routerLink="/res">我的文件</a>
@@ -8,11 +8,15 @@
   </header>
 
   <main class="public-main account-main">
-    <p class="eyebrow">POCKLO / ACCOUNT</p>
-    <h1>账号设置</h1>
-    <div *ngIf="loggedIn" class="public-actions"><a routerLink="/account/applications">已授权应用</a></div>
-    <section class="sample account-panel" aria-labelledby="frienden-title">
-      <h2 id="frienden-title">友间绑定</h2>
+    <h1 *ngIf="!embedded">账号设置</h1>
+    <nav *ngIf="loggedIn" class="account-tabs" aria-label="账号设置分类">
+      <button type="button" [attr.aria-pressed]="!showGrants" (click)="showGrants = false">友间绑定</button>
+      <button type="button" [attr.aria-pressed]="showGrants" (click)="showGrants = true">已授权应用</button>
+      <button *ngIf="embedded" type="button" class="account-logout" [disabled]="pending" (click)="logout()">退出登录</button>
+    </nav>
+    <app-developer *ngIf="showGrants" mode="grants" [embedded]="true"></app-developer>
+    <section *ngIf="!showGrants" class="sample account-panel" aria-label="友间绑定">
+      <h2>友间绑定</h2>
       <p>授权后，小兜会记录友间已验证的手机号，之后可以用友间登录。</p>
       <p *ngIf="message" role="status">{{message}}</p>
       <p *ngIf="error" class="account-error" role="alert">{{error}}</p>

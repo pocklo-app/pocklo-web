@@ -1,6 +1,7 @@
+import { ResourcePickerComponent } from './components/picker/resource-picker.component';
 import { NgModule, inject} from "@angular/core";
 import { Router, RouterModule, Routes } from "@angular/router";
-import { WorkspaceComponent } from "./components/workspace/workspace.component";
+import { WorkspaceDesktopComponent } from "./components/workspace/workspace-desktop.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
 import { FriendenAccountComponent } from "./components/user/frienden-account.component";
 import { OauthComponent } from "./components/user/oauth.component";
@@ -16,9 +17,10 @@ const routes: Routes = [
   { path: 'user/refresh', component: RefreshComponent},
   { path: 'res', component: ResHomeComponent},
   { path: 'res/next/:next', component: ResHomeComponent},
-  { path: 'res/:res_str_id', component: WorkspaceComponent},
-  { path: 'res/:res_str_id/:tab', component: WorkspaceComponent},
-  { path: 'share/:token', component: WorkspaceComponent},
+  { path: 'res/:res_str_id', component: WorkspaceDesktopComponent},
+  { path: 'res/:res_str_id/:tab', component: WorkspaceDesktopComponent},
+  { path: 'picker/select', component: ResourcePickerComponent },
+  { path: 'share/:token', component: WorkspaceDesktopComponent},
   {
     path: 'login', component: HomeComponent,
     canActivate: [route => inject(Router).createUrlTree(['/'], { queryParams: route.queryParams })],

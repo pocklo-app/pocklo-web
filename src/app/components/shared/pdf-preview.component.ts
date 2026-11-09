@@ -5,7 +5,7 @@ import { BaseService } from '../../services/base.service';
 @Component({
   selector: 'app-pdf-preview',
   template: `
-    <div class="pdf-controls" *ngIf="document">
+    <div class="pdf-controls" *ngIf="document && document.numPages > 1">
       <button type="button" [disabled]="loading || page <= 1" (click)="render(page - 1)">上一页</button>
       <span aria-live="polite">{{page}} / {{document.numPages}}</span>
       <button type="button" [disabled]="loading || page >= document.numPages" (click)="render(page + 1)">下一页</button>
@@ -19,8 +19,12 @@ import { BaseService } from '../../services/base.service';
     .pdf-controls { position: sticky; top: 0; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 8px; background: var(--panel); }
     button { padding: 6px 10px; color: inherit; background: var(--canvas); border: 1px solid var(--line); border-radius: 4px; }
     button:disabled { opacity: .55; }
+    .pdf-controls :is(button, span) { white-space: nowrap; }
+    :host-context(.inline-art) .pdf-controls { padding: 3px; background: transparent; }
+    :host-context(.inline-art) canvas { max-height: min(38vh, 365px); width: auto; object-fit: contain; box-shadow: 0 2px 10px #3442541f; }
     p { padding: 12px; }
     canvas { display: block; max-width: calc(100% - 24px); height: auto; margin: 12px auto; background: white; }
+    :host-context(.column-preview) canvas { max-height: min(51vh, 460px); }
     canvas[hidden] { display: none; }
   `],
 })

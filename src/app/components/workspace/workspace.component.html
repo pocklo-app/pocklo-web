@@ -1,48 +1,87 @@
+<ng-template #glyph let-name><svg class="finder-glyph" viewBox="0 0 24 24" aria-hidden="true"><svg:use [attr.href]="'assets/finder/icons.svg#' + name"></svg:use></svg></ng-template>
+<ng-template #art let-item let-thumb="thumbnail">
+  <span class="file-art" aria-hidden="true">
+    <img draggable="false" class="file-icon" [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + iconType(item) + '.svg'" alt="">
+    <img draggable="false" class="file-thumbnail" *ngIf="thumb && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
+      (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false">
+  </span>
+</ng-template>
+
+<div class="finder-desktop">
 <div class="drive">
   <aside class="rail">
-    <a class="brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>小兜<small>POCKLO / FILES</small></span></a>
-    <div class="rail-label">{{ shareToken ? 'SHARED WORKSPACE' : 'WORKSPACE' }}</div>
+    <a class="brand" routerLink="/"><img src="assets/pocklo.svg" alt=""><span>Pocklo <small>小兜</small></span></a>
     <nav aria-label="工作区">
+      <p class="rail-label">个人收藏</p>
       <button type="button" [disabled]="busy" [class.active]="section === 'files'" (click)="showFiles()">
-        <span class="icon-folder" aria-hidden="true"></span>{{ shareToken ? '共享文件' : '文件浏览' }}
+        <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'folder' }"></ng-container>{{shareToken ? '共享文件' : '我的文件'}}
       </button>
       <button type="button" *ngIf="!shareToken && (data?.can_manage || user.has_login)" [disabled]="busy" [class.active]="section === 'shares'" (click)="showShares()">
-        <span class="icon-link" aria-hidden="true"></span>我的分享
+        <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'link' }"></ng-container>我的分享
       </button>
-      <a *ngIf="user.has_login" routerLink="/res"><span class="icon-file" aria-hidden="true"></span>我的文件</a>
-      <a *ngIf="!shareToken && user.has_login" routerLink="/account"><span class="icon-setting" aria-hidden="true"></span>账号设置</a>
+      <ng-container *ngIf="user.has_login">
+        <p class="rail-label locations-label">位置</p>
+        <a *ngIf="shareToken" routerLink="/res">小兜云盘</a>
+        <button type="button" [class.active]="section === 'account'" (click)="showAccount()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'settings' }"></ng-container>账号设置</button>
+      </ng-container>
     </nav>
-    <div class="rail-end"><i></i>{{ shareToken ? 'LINK ACCESS' : 'FILE WORKSPACE' }}</div>
   </aside>
 
   <main class="stage">
-    <div class="topline">
-      <nav class="crumbs" *ngIf="section === 'files'" aria-label="当前位置">
-        <ng-container *ngFor="let part of data?.breadcrumbs; let last = last">
-          <button type="button" *ngIf="!last" [disabled]="busy" (click)="go(part.id)">{{part.name}}</button>
-          <span *ngIf="!last" aria-hidden="true">/</span>
-          <span *ngIf="last" aria-current="location">{{part.name}}</span>
-        </ng-container>
-      </nav>
-      <span class="context" *ngIf="shareToken">分享访问</span>
-    </div>
-
-    <header class="mast">
-      <div>
-        <div class="kicker">{{ section === 'shares' ? 'SHARE / LINKS' : shareToken ? 'SHARE / FILES' : 'POCKLO / WORKSPACE' }}</div>
-        <h1>{{ section === 'shares' ? '我的分享' : data?.resource.name || (shareToken ? '共享文件' : '文件工作区') }}<span aria-hidden="true">_</span></h1>
+    <header class="mast" data-window-drag>
+      <button type="button" *ngIf="canCloseWindow" class="window-close" aria-label="关闭窗口" title="关闭窗口" (click)="closeWindow.emit()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'close' }"></ng-container></button>
+      <div class="navigation-tools" role="group" aria-label="目录导航">
+        <button type="button" aria-label="后退" title="后退" [disabled]="busy || (section === 'files' && !canGoBack)" (click)="stepHistory(-1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'back' }"></ng-container></button>
+        <button type="button" aria-label="前进" title="前进" [disabled]="busy || section !== 'files' || !canGoForward" (click)="stepHistory(1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></button>
       </div>
-      <div class="actions" *ngIf="section === 'files' && data?.can_manage && data?.resource.folder">
-        <button type="button" [disabled]="busy" (click)="edit('folder')">新建文件夹</button>
-        <button type="button" [disabled]="busy" (click)="edit('link')"><span class="icon-link" aria-hidden="true"></span>新建链接</button>
-        <button type="button" [disabled]="busy" (click)="folderInput.click()">上传文件夹</button>
-        <button type="button" class="primary" [disabled]="busy" (click)="fileInput.click()"><span class="icon-upload" aria-hidden="true"></span>上传文件</button>
-        <input #fileInput type="file" hidden multiple (change)="upload(fileInput)">
-        <input #folderInput type="file" hidden multiple webkitdirectory (change)="upload(folderInput)">
+      <h1 [title]="data?.resource.name">{{section === 'account' ? '账号设置' : section === 'shares' ? '我的分享' : data?.resource.name || (shareToken ? '共享文件' : '我的文件')}}</h1>
+      <div class="toolbar" *ngIf="section === 'files' && data?.resource.folder">
+        <button type="button" class="new-window" aria-label="新建窗口" [disabled]="!canOpenWindow" [title]="canOpenWindow ? '新建窗口（⌘N）' : '最多可打开 4 个窗口'" (click)="openWindow()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'window' }"></ng-container></button>
+        <div class="view-switch" role="group" aria-label="目录视图">
+          <button *ngFor="let mode of views" type="button" [attr.aria-label]="mode.name" [title]="mode.name"
+            [attr.aria-pressed]="view === mode.id" (click)="setView(mode.id)">
+            <ng-container *ngTemplateOutlet="glyph; context: { $implicit: mode.id }"></ng-container>
+          </button>
+        </div>
+        <div class="toolbar-tools sort-tools">
+          <label class="sort-control" title="排序">
+            <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'sort' }"></ng-container>
+            <select [ngModel]="sort + (ascending ? ':asc' : ':desc')" (ngModelChange)="chooseSort($event)" aria-label="排序">
+              <option value="name:asc">名称升序</option><option value="name:desc">名称降序</option>
+              <option value="created_at:desc">最新创建</option><option value="created_at:asc">最早创建</option>
+              <option value="size:desc">大小降序</option><option value="size:asc">大小升序</option>
+            </select>
+          </label>
+        </div>
+        <div class="toolbar-tools file-tools">
+          <button type="button" *ngIf="data.can_manage" [disabled]="selection.length !== 1 || busy" aria-label="分享所选项目" title="分享" (click)="createShare(selected)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'share' }"></ng-container></button>
+          <button type="button" *ngIf="visibleView !== 'gallery' && visibleView !== 'columns'" aria-label="显示详情" title="显示详情" [attr.aria-pressed]="showDetails" (click)="showDetails = !showDetails"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'info' }"></ng-container></button>
+          <div class="create-menu" *ngIf="data.can_manage">
+            <button type="button" aria-label="新建与上传" title="新建与上传" [disabled]="busy" [attr.aria-expanded]="menuOpen" (click)="menuOpen = !menuOpen">
+              <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'more' }"></ng-container>
+            </button>
+            <div class="menu-popover" *ngIf="menuOpen">
+              <button type="button" (click)="menuOpen = false; edit('folder')">新建文件夹</button>
+              <button type="button" (click)="menuOpen = false; edit('link')">新建链接</button>
+              <button type="button" (click)="menuOpen = false; fileInput.click()">上传文件</button>
+              <button type="button" (click)="menuOpen = false; folderInput.click()">上传文件夹</button>
+            </div>
+            <input #fileInput type="file" hidden multiple (change)="upload(fileInput)">
+            <input #folderInput type="file" hidden multiple webkitdirectory (change)="upload(folderInput)">
+          </div>
+          <button type="button" class="selection-menu" aria-label="所选项目的操作" title="所选项目的操作" *ngIf="selected" (click)="showContext($event, selected)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'actions' }"></ng-container></button>
+        </div>
+        <label class="search desktop-search"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'search' }"></ng-container><input [id]="controlId('drive-search-desktop')" type="search" maxlength="256" [disabled]="busy" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索" aria-label="搜索此目录及子目录"></label>
+        <button type="button" class="mobile-search-button" aria-label="搜索" title="搜索（/）" [attr.aria-expanded]="showSearch" (click)="showSearch ? closeSearch() : openSearch()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'search' }"></ng-container></button>
       </div>
     </header>
 
-    <div *ngIf="notice" class="notice" role="status">{{notice}}</div>
+    <div class="searchbar" *ngIf="section === 'files' && data?.resource.folder && showSearch">
+      <label class="search"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'search' }"></ng-container><input [id]="controlId('drive-search')" type="search" maxlength="256" [disabled]="busy" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录"></label>
+      <span *ngIf="query.trim()" role="status">{{loading ? '正在搜索…' : '搜索结果'}}</span>
+      <button type="button" (click)="closeSearch()" aria-label="关闭搜索"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'close' }"></ng-container></button>
+    </div>
+
     <div *ngIf="error" class="error" role="alert">
       <p>{{error}}</p>
       <button *ngIf="!shareToken && !user.has_login" type="button" (click)="login()">登录小兜</button>
@@ -55,85 +94,117 @@
       <p class="quiet" *ngIf="!loading && !shares.length">选中文件或目录并点击「分享」后，链接会出现在这里。</p>
       <div class="share-row" *ngFor="let share of shares">
         <div class="share-name"><span class="icon-link" aria-hidden="true"></span><div><strong>{{share.name}}</strong><small>{{share.folder ? '目录及子资源' : '单个文件'}} · {{share.created_at | date:'yyyy-MM-dd HH:mm'}}</small></div></div>
-        <div class="actions"><a [href]="shareUrl(share)" target="_blank" rel="noopener noreferrer">打开</a><button type="button" (click)="copyShare(share)">复制链接</button><button type="button" class="danger" [disabled]="busy" (click)="revokeShare(share)">撤销</button></div>
+        <div class="actions"><a [href]="shareUrl(share)" target="_blank" rel="noopener noreferrer">打开</a><button type="button" (click)="openShare(share)">分享详情</button><button type="button" class="danger" [disabled]="busy" (click)="revokeShare(share)">撤销</button></div>
       </div>
     </section>
     <p class="quiet" *ngIf="section === 'files' && !data && loading">正在读取文件…</p>
-    <form *ngIf="editor === 'folder' || editor === 'link'" class="inline-editor create-editor" (ngSubmit)="saveEdit()">
-      <label for="new-resource-name">{{editor === 'folder' ? '文件夹名称' : '链接名称'}}</label>
-      <input id="new-resource-name" name="resourceName" [(ngModel)]="draft" maxlength="256" required>
-      <ng-container *ngIf="editor === 'link'">
-        <label for="new-link-url">链接地址</label>
-        <input id="new-link-url" name="linkUrl" type="url" inputmode="url" autocapitalize="off" spellcheck="false" [(ngModel)]="linkUrl" maxlength="1024" placeholder="https://example.com" required>
-      </ng-container>
-      <button type="submit" class="primary" [disabled]="busy || !draft.trim()">创建</button>
-      <button type="button" [disabled]="busy" (click)="cancelEdit()">取消</button>
-      <p class="operation-error" *ngIf="operationError" role="alert">{{operationError}}</p>
-    </form>
+    <app-frienden-account *ngIf="section === 'account'" class="finder-account" [embedded]="true"
+      [returnResource]="!shareToken ? data?.resource.id : null"></app-frienden-account>
+    <div class="body" *ngIf="section === 'files' && data && !error" [class.single-file]="!data.resource.folder" [class.with-details]="showDetails && (visibleView === 'grid' || visibleView === 'list')">
+      <section class="listing" *ngIf="data.resource.folder" aria-label="文件浏览"
+        (dragover)="dragOver($event, data.resource)" (drop)="drop($event, data.resource)"
+        (dragleave)="leaveDropZone($event)" (contextmenu)="showContext($event)" [class.gallery-listing]="visibleView === 'gallery'">
+        <span class="drop-hint" *ngIf="dropTarget as target">
+          <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'folder' }"></ng-container>
+          <span>移到「{{target.name}}」</span>
+        </span>
+        <ng-container [ngSwitch]="visibleView">
+          <div *ngSwitchCase="'columns'" class="finder-columns" [id]="controlId('finder-columns')" aria-label="分栏浏览">
+            <p class="quiet" *ngIf="columnLoading && !columns.length">正在读取文件夹…</p>
+            <section class="finder-column" *ngFor="let column of columns; let last = last; trackBy: byId" [attr.aria-label]="column.name" [attr.data-drop-directory]="column.id" [attr.data-drop-name]="column.name">
+              <div class="column-heading">{{column.name}}</div>
+              <div class="column-entries">
+                <button class="column-item" type="button" *ngFor="let item of column.entries; trackBy: byId"
+                  [class.selected]="isSelected(item)" [class.path-selected]="!last && column.selectedId === item.id && !isSelected(item)"
+                  [attr.aria-pressed]="isSelected(item)" [class.drop-target]="dropTarget?.row && dropTarget?.id === item.id"
+                  [attr.data-drop-folder]="item.folder ? item.id : null" [attr.data-drop-name]="item.folder ? item.name : null"
+                  [draggable]="data.can_manage" (dragstart)="startDrag($event, item, column.entries, column.id)" (dragend)="endDrag()"
+                  (contextmenu)="showContext($event, item, column.entries)" (pointerenter)="warmFolder(item)" (focus)="warmFolder(item)"
+                  [attr.data-finder-item]="item.id" [title]="item.name" [disabled]="busy"
+                  (click)="pickColumn(item, column, $event)" (dblclick)="openItem(item, $event)"
+                  (keydown)="browseKeys($event, item, column.entries)" (keydown.enter)="enterItem($event, item)">
+                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item }"></ng-container>
+                  <span class="entry-label">{{item.name}}</span>
+                  <ng-container *ngIf="item.folder"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></ng-container>
+                </button>
+                <p class="quiet" *ngIf="column.pending" role="status">正在读取…</p>
+                <p class="quiet" *ngIf="!column.pending && !column.entries.length">{{column.error ? '无法读取这个文件夹。' : '此文件夹为空'}}</p>
+                <button type="button" *ngIf="column.error && last" (click)="load()">重试</button>
+              </div>
+            </section>
+            <section class="column-preview" *ngIf="selected && selection.length === 1 && !selected.folder && !columnLoading" aria-label="文件预览">
+              <ng-container *ngTemplateOutlet="inlinePreview; context: { $implicit: selected }"></ng-container>
+            </section>
+            <div class="column-blank" *ngIf="(!selected || selected.folder) && columns.length" aria-hidden="true"></div>
+          </div>
 
-    <div class="body" *ngIf="section === 'files' && data && !error" [class.single-file]="!data.resource.folder">
-      <section class="listing" *ngIf="data.resource.folder" aria-label="文件列表">
-        <div class="panel-head browser-head">
-          <div><h2>{{query.trim() ? '搜索结果' : '目录内容'}}</h2><span>{{entries.length}}{{data.has_more ? '+' : ''}} 项</span></div>
-          <div class="view-tools"><label class="search"><span class="icon-search" aria-hidden="true"></span><input id="drive-search" type="search" maxlength="256" [disabled]="busy" [ngModel]="query" (ngModelChange)="updateQuery($event)" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录"><kbd>/</kbd></label>
-          <div class="view-switch" role="group" aria-label="目录视图">
-            <button type="button" [attr.aria-pressed]="view === 'list'" (click)="setView('list')">列表</button>
-            <button type="button" [attr.aria-pressed]="view === 'grid'" (click)="setView('grid')">缩略图</button>
-          </div></div>
-        </div>
-        <div class="selection-bar" [class.engaged]="selected || cut">
-          <ng-container *ngIf="cut && data.can_manage; else selectedActions">
-            <span class="selection-name" [title]="cut.name">待移动 · {{cut.name}}</span>
+          <div *ngSwitchCase="'gallery'" class="finder-gallery" aria-label="连廊浏览">
+            <div class="gallery-stage" *ngIf="selected as item">
+              <button class="gallery-arrow previous" type="button" aria-label="上一个文件" title="上一个文件" [disabled]="galleryIndex <= 0" (click)="stepGallery(-1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'back' }"></ng-container></button>
+              <ng-container *ngTemplateOutlet="inlinePreview; context: { $implicit: item }"></ng-container>
+              <button class="gallery-arrow next" type="button" aria-label="下一个文件" title="下一个文件" [disabled]="galleryIndex >= entries.length - 1" (click)="stepGallery(1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></button>
+            </div>
+            <div class="gallery-strip" *ngIf="entries.length" aria-label="文件缩略图">
+              <button type="button" class="gallery-tile" *ngFor="let item of entries; trackBy: byId" [id]="controlId('gallery-' + item.id)"
+                [class.selected]="isSelected(item)" [attr.aria-pressed]="isSelected(item)" [class.drop-target]="dropTarget?.row && dropTarget?.id === item.id"
+                [attr.data-drop-folder]="item.folder ? item.id : null" [attr.data-drop-name]="item.folder ? item.name : null"
+                [draggable]="data.can_manage" (dragstart)="startDrag($event, item)" (dragend)="endDrag()"
+                (contextmenu)="showContext($event, item)"
+                [attr.data-finder-item]="item.id" [title]="item.name" [disabled]="busy"
+                (click)="pickGallery(item, $event)" (dblclick)="openItem(item, $event)"
+                (keydown)="browseKeys($event, item, entries, true)" (keydown.enter)="enterItem($event, item)">
+                <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: true }"></ng-container>
+                <span class="entry-label">{{item.name}}</span>
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngSwitchDefault>
+            <div class="file-head" *ngIf="visibleView === 'list'">
+              <button type="button" (click)="setSort('name')">名称 <span *ngIf="sort === 'name'">{{ascending ? '↑' : '↓'}}</span></button>
+              <button type="button" class="file-date" (click)="setSort('created_at')">创建日期 <span *ngIf="sort === 'created_at'">{{ascending ? '↑' : '↓'}}</span></button>
+              <button type="button" (click)="setSort('size')">大小 <span *ngIf="sort === 'size'">{{ascending ? '↑' : '↓'}}</span></button>
+              <span class="file-kind">种类</span>
+            </div>
+            <div class="file-entries" [class.file-grid]="visibleView === 'grid'" (pointerdown)="startMarquee($event)" (pointermove)="updateMarquee($event)"
+              (pointerup)="endMarquee()" (pointercancel)="endMarquee()" (click)="blankClick($event)">
+              <div class="file-row" *ngFor="let item of entries; trackBy: byId" [class.selected]="isSelected(item)" [class.drop-target]="dropTarget?.row && dropTarget?.id === item.id"
+                [attr.data-drop-folder]="item.folder ? item.id : null" [attr.data-drop-name]="item.folder ? item.name : null"
+                [draggable]="data.can_manage" (dragstart)="startDrag($event, item)" (dragend)="endDrag()"
+                (contextmenu)="showContext($event, item)"
+                (click)="!$any($event.target).closest('button') && select(item, $event)"
+                (dblclick)="!$any($event.target).closest('button') && openItem(item, $event)">
+                <button class="file-name" type="button" [attr.aria-pressed]="isSelected(item)" [attr.data-finder-item]="item.id"
+                  [title]="item.name" [disabled]="busy" (click)="select(item, $event)" (dblclick)="openItem(item, $event)"
+                  (keydown)="browseKeys($event, item, entries)" (keydown.enter)="enterItem($event, item)">
+                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: visibleView === 'grid' }"></ng-container>
+                  <span class="entry-label">{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
+                </button>
+                <time class="file-date">{{item.created_at | date:'yyyy-MM-dd'}}</time>
+                <span class="file-size">{{size(item)}}</span>
+                <span class="file-kind">{{type(item)}}</span>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+        <p class="quiet empty-list" *ngIf="visibleView !== 'columns' && !loading && !entries.length">{{query.trim() ? '没有匹配的文件或文件夹。' : '此文件夹为空'}}</p>
+        <p class="quiet" *ngIf="loading && visibleView !== 'columns'">正在读取…</p>
+        <p class="quiet" *ngIf="data.has_more">已显示前 {{entries.length}} 项，可以输入更具体的关键词。</p>
+        <div class="selection-bar" *ngIf="(moveItems.length && showMoveBar) || operationError || editor === 'rename' || deleteTarget">
+          <ng-container *ngIf="moveItems.length && showMoveBar && data.can_manage">
+            <span class="selection-name">待移动 · {{moveItems.length === 1 ? moveItems[0].name : moveItems.length + ' 项'}}</span>
             <div class="actions" aria-label="选择移动目标">
-              <button type="button" *ngIf="data.breadcrumbs.at(-2) as parent" [disabled]="busy" (click)="go(parent.id)">上一级</button>
               <button type="button" class="primary" [disabled]="busy || !canPaste" (click)="paste()">移动到此目录</button>
               <button type="button" [disabled]="busy" (click)="cancelMove()">取消移动</button>
             </div>
-            <small *ngIf="!operationError">{{moveHint}}</small>
           </ng-container>
-          <ng-template #selectedActions>
-            <ng-container *ngIf="selected as item; else selectHint">
-              <span class="selection-name" [title]="item.name">已选 · {{item.name}}</span>
-              <div class="actions" aria-label="所选资源操作">
-                <button type="button" class="primary" [disabled]="busy" (click)="openItem(item, $event)">{{item.folder ? '打开目录' : item.preview === 'link' ? '查看链接' : '预览'}}</button>
-                <button *ngIf="!item.folder && item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
-                <ng-container *ngIf="data.can_manage">
-                  <button type="button" [disabled]="busy" (click)="createShare(item)">分享</button>
-                  <ng-container *ngTemplateOutlet="manageButtons; context: { $implicit: item }"></ng-container>
-                </ng-container>
-                <button type="button" class="clear-selection" [disabled]="busy" (click)="closeInspector()" aria-label="取消选中" title="取消选中">×</button>
-              </div>
-              <ng-container *ngTemplateOutlet="renameForm"></ng-container>
-              <ng-container *ngTemplateOutlet="deleteConfirmation; context: { $implicit: item }"></ng-container>
-            </ng-container>
-          </ng-template>
-          <ng-template #selectHint><small>单击选中 · 双击打开</small></ng-template>
+          <ng-container *ngTemplateOutlet="renameForm"></ng-container>
+          <ng-container *ngIf="deleteTarget as item"><ng-container *ngTemplateOutlet="deleteConfirmation; context: { $implicit: item }"></ng-container></ng-container>
           <p class="operation-error" *ngIf="operationError && editor !== 'link' && editor !== 'folder'" role="alert">{{operationError}}</p>
-        </div>
-        <div class="file-head" *ngIf="view === 'list'">
-          <button type="button" (click)="setSort('name')">名称 <span *ngIf="sort === 'name'">{{ascending ? '↑' : '↓'}}</span></button>
-          <button type="button" class="file-date" (click)="setSort('created_at')">创建日期 <span *ngIf="sort === 'created_at'">{{ascending ? '↑' : '↓'}}</span></button>
-          <button type="button" (click)="setSort('size')">大小 <span *ngIf="sort === 'size'">{{ascending ? '↑' : '↓'}}</span></button>
-        </div>
-        <p class="quiet" *ngIf="loading">正在读取…</p>
-        <div *ngIf="!loading" [class.file-grid]="view === 'grid'">
-          <div class="file-row" *ngFor="let item of entries; trackBy: byId" [class.selected]="detail?.id === item.id">
-            <button class="file-name" type="button" [attr.aria-pressed]="selected?.id === item.id" [disabled]="busy" (click)="select(item)" (dblclick)="openItem(item, $event)" (keydown.enter)="openItem(item, $event)">
-              <span class="file-art" aria-hidden="true">
-                <img class="file-icon" [src]="'assets/file-types/' + iconType(item) + '.svg'" alt="">
-                <img class="file-thumbnail" *ngIf="view === 'grid' && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false">
-              </span>
-              <span>{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
-            </button>
-            <time class="file-date">{{item.created_at | date:'yyyy-MM-dd'}}</time>
-            <span class="file-size">{{size(item)}}</span>
-          </div>
-          <p class="quiet" *ngIf="!entries.length">{{query.trim() ? '没有匹配的文件或文件夹。' : '这个文件夹还是空的。'}}</p>
-          <p class="quiet" *ngIf="data.has_more">已显示前 {{entries.length}} 项，可以输入更具体的关键词。</p>
         </div>
       </section>
 
-      <aside class="inspector" id="drive-inspector">
+      <aside class="inspector" [id]="controlId('drive-inspector')" *ngIf="!data.resource.folder || (showDetails && (visibleView === 'grid' || visibleView === 'list'))">
         <ng-container *ngIf="detail || data.resource as item">
           <ng-template #fileInfo>
             <dl><div><dt>类型</dt><dd>{{type(item)}}</dd></div><div *ngIf="!item.folder"><dt>大小</dt><dd>{{size(item)}}</dd></div><div><dt>创建时间</dt><dd>{{item.created_at | date:'yyyy-MM-dd HH:mm'}}</dd></div></dl>
@@ -147,7 +218,7 @@
             <div class="preview-toolbar">
               <div class="actions" aria-label="预览操作">
                 <button *ngIf="previewError && item.preview" type="button" (click)="loadPreview(item)">重试</button>
-                <button *ngIf="item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
+                <button *ngIf="!item.folder && item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
                 <button *ngIf="data.can_manage" type="button" [disabled]="busy" (click)="createShare(item)">分享</button>
                 <ng-container *ngTemplateOutlet="closeButton"></ng-container>
               </div>
@@ -180,7 +251,7 @@
           </ng-template>
 
           <ng-template #fileManagement>
-            <div class="manage actions" *ngIf="data.can_manage && !cut">
+            <div class="manage actions" *ngIf="data.can_manage && !moveItems.length">
               <ng-container *ngTemplateOutlet="manageButtons; context: { $implicit: item }"></ng-container>
             </div>
             <ng-container *ngTemplateOutlet="renameForm"></ng-container>
@@ -190,8 +261,36 @@
         </ng-container>
       </aside>
     </div>
+    <footer class="finder-status" *ngIf="section === 'files' && data && !error">
+      <nav class="crumbs" aria-label="当前位置" (dragover)="dragOver($event)" (drop)="drop($event)" (dragleave)="leaveDropZone($event)">
+        <ng-container *ngFor="let part of data.breadcrumbs; let last = last">
+          <button type="button" *ngIf="!last" [disabled]="busy" [class.drop-target]="dropTarget?.row && dropTarget?.id === part.id" [attr.data-drop-folder]="part.id" [attr.data-drop-name]="part.name" (click)="go(part.id)"><img src="assets/finder/folder.svg" alt="">{{part.name}}</button>
+          <ng-container *ngIf="!last"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></ng-container>
+          <span *ngIf="last" aria-current="location">{{part.name}}</span>
+        </ng-container>
+      </nav>
+      <span class="status-count" *ngIf="data.resource.folder">{{selection.length ? '已选 ' + selection.length + ' 项，共 ' : ''}}{{entries.length}}{{data.has_more ? '+' : ''}} 项</span>
+    </footer>
+    <div *ngIf="notice" class="finder-toast" role="status"><span>{{notice}}</span><button type="button" (click)="notice = ''" aria-label="关闭提示">×</button></div>
   </main>
 </div>
+</div>
+
+<ng-template #inlinePreview let-item>
+  <div class="inline-preview">
+    <div class="inline-art" [class.inline-link]="item.preview === 'link'">
+      <ng-container *ngIf="!item.folder && item.preview && !modalItem; else placeholder">
+        <ng-container *ngTemplateOutlet="previewContent; context: { $implicit: item }"></ng-container>
+      </ng-container>
+      <ng-template #placeholder>
+        <button type="button" class="inline-open" [attr.aria-label]="item.folder ? '打开目录' : '打开预览'" (click)="openItem(item, $event)"><ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: true }"></ng-container></button>
+      </ng-template>
+    </div>
+    <div class="inline-caption"><strong>{{item.name}}</strong><span>{{type(item)}}<ng-container *ngIf="!item.folder && item.preview !== 'link'"> · {{size(item)}}</ng-container></span></div>
+    <div class="column-info"><h3>信息</h3><dl><div><dt>创建时间</dt><dd>{{item.created_at | date:'yyyy年M月d日 HH:mm'}}</dd></div></dl></div>
+  </div>
+</ng-template>
+
 
 <ng-template #manageButtons let-item>
   <button type="button" [disabled]="busy" (click)="edit('rename', item)">重命名</button>
@@ -209,39 +308,141 @@
 
 <ng-template #renameForm>
   <form *ngIf="editor === 'rename'" class="inline-editor detail-editor" (ngSubmit)="saveEdit()">
-    <label for="file-draft">新名称</label>
-    <input id="file-draft" name="draft" [(ngModel)]="draft" maxlength="256" required>
+    <label [attr.for]="controlId('file-draft')">新名称</label>
+    <input [id]="controlId('file-draft')" name="draft" [(ngModel)]="draft" maxlength="256" required>
     <button type="submit" class="primary" [disabled]="busy || !draft.trim()">保存</button>
     <button type="button" [disabled]="busy" (click)="cancelEdit()">取消</button>
   </form>
 </ng-template>
 
-<dialog #previewDialog class="preview-dialog" aria-labelledby="preview-title" (cancel)="closePreview($event)">
+<div *ngIf="marquee as rect" class="finder-marquee" aria-hidden="true"
+  [style.left.px]="rect.left" [style.top.px]="rect.top" [style.width.px]="rect.width" [style.height.px]="rect.height"></div>
+
+<div *ngIf="context as menu" [id]="controlId('finder-context')" class="finder-context" role="menu" aria-label="文件操作"
+    [style.left.px]="menu.x" [style.top.px]="menu.y" (keydown)="menuKeys($event)" (contextmenu)="$event.preventDefault()">
+  <ng-container *ngIf="selected as item">
+    <button role="menuitem" type="button" *ngIf="selection.length === 1 && item.id !== data.resource.id" (click)="dismissContext(); openItem(item, $event)">打开</button>
+    <button role="menuitem" type="button" *ngIf="selection.length === 1 && item.folder" [disabled]="!canOpenWindow" (click)="openWindow(item)">在新窗口中打开</button>
+    <button role="menuitem" type="button" (click)="openPreview(item, $event)">快速查看 <kbd>空格</kbd></button>
+    <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="openInfo(item)">显示简介 <kbd>⌘I</kbd></button>
+    <button role="menuitem" type="button" *ngIf="selection.length === 1 && !item.folder && item.preview !== 'link'" (click)="dismissContext(true); download(item)">下载</button>
+    <ng-container *ngIf="data.can_manage">
+      <hr>
+      <button role="menuitem" type="button" (click)="dismissContext(true); beginMove(item, false)">拷贝 <kbd>⌘C</kbd></button>
+      <button role="menuitem" type="button" (click)="dismissContext(true); beginMove(item)">移动到…</button>
+      <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); edit('rename', item)">重新命名</button>
+      <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); createShare(item)">共享…</button>
+      <button role="menuitem" type="button" *ngIf="selection.length === 1 && (item.id !== data.resource.id || data.can_delete)" class="danger" (click)="dismissContext(true); confirmDelete(item)">删除…</button>
+    </ng-container>
+  </ng-container>
+  <ng-container *ngIf="data.can_manage && !selected">
+    <button role="menuitem" type="button" (click)="dismissContext(); edit('folder')">新建文件夹</button>
+    <button role="menuitem" type="button" (click)="dismissContext(); edit('link')">新建链接</button>
+  </ng-container>
+  <button role="menuitem" type="button" *ngIf="canPaste" (click)="dismissContext(); paste()">将项目移到这里 <kbd>⌥⌘V</kbd></button>
+  <button role="menuitem" type="button" *ngIf="!selected" [disabled]="!canOpenWindow" (click)="openWindow()">新建窗口</button>
+  <button role="menuitem" type="button" *ngIf="!selected" (click)="dismissContext(); load()">刷新</button>
+</div>
+
+<dialog #createDialog class="preview-dialog finder-sheet" [attr.aria-labelledby]="controlId('create-title')"
+  (cancel)="$event.preventDefault(); !busy && cancelEdit()">
+  <header><h2 [id]="controlId('create-title')">{{editor === 'folder' ? '新建文件夹' : '新建链接'}}</h2></header>
+  <form *ngIf="editor === 'folder' || editor === 'link'" class="finder-form" (ngSubmit)="saveEdit()">
+      <label [attr.for]="controlId('new-resource-name')">{{editor === 'folder' ? '文件夹名称' : '链接名称'}}</label>
+      <input [id]="controlId('new-resource-name')" name="resourceName" [(ngModel)]="draft" maxlength="256" required>
+      <ng-container *ngIf="editor === 'link'">
+        <label [attr.for]="controlId('new-link-url')">链接地址</label>
+        <input [id]="controlId('new-link-url')" name="linkUrl" type="url" inputmode="url" autocapitalize="off" spellcheck="false" [(ngModel)]="linkUrl" maxlength="1024" placeholder="https://example.com" required>
+      </ng-container>
+      <div class="finder-dialog-actions">
+        <button type="button" [disabled]="busy" (click)="cancelEdit()">取消</button>
+        <button type="submit" class="primary" [disabled]="busy || !draft.trim()">创建</button>
+      </div>
+      <p class="operation-error" *ngIf="operationError" role="alert">{{operationError}}</p>
+    </form>
+</dialog>
+
+<dialog #shareDialog class="preview-dialog finder-sheet" [attr.aria-labelledby]="controlId('share-title')"
+  (cancel)="$event.preventDefault(); closeShare()">
+  <ng-container *ngIf="createdShare as share">
+    <header><h2 [id]="controlId('share-title')">分享「{{share.name}}」</h2></header>
+    <div class="finder-form">
+      <p>{{share.folder ? '任何获得链接的人都可以查看该文件夹及子资源。' : '任何获得链接的人都可以查看此资源。'}}</p>
+      <figure class="share-qr">
+        <img *ngIf="shareQr" [src]="shareQr" alt="此资源的分享二维码" width="184" height="184">
+        <p *ngIf="!shareQr" class="share-qr-placeholder" role="status">{{shareQrError ? '二维码暂不可用' : '正在生成二维码…'}}</p>
+        <figcaption>
+          <span>扫码打开分享</span>
+          <a *ngIf="shareQr" [href]="shareQr" download="pocklo-share-qr.png">下载二维码</a>
+        </figcaption>
+      </figure>
+      <label [attr.for]="controlId('share-url')">分享链接</label>
+      <input [id]="controlId('share-url')" [value]="shareUrl(share)" readonly (focus)="$any($event.target).select()">
+      <p *ngIf="shareError" class="operation-error" role="alert">{{shareError}}</p>
+      <p *ngIf="shareFeedback" role="status">{{shareFeedback}}</p>
+      <div class="finder-dialog-actions">
+        <button type="button" (click)="closeShare()">完成</button>
+        <button type="button" class="primary" (click)="copyShare(share)">复制链接</button>
+      </div>
+    </div>
+  </ng-container>
+</dialog>
+
+<dialog #infoDialog class="preview-dialog finder-info" [attr.aria-labelledby]="controlId('finder-info-title')" (close)="infoItem = null">
+  <header class="preview-toolbar">
+    <button class="preview-close" type="button" autofocus (click)="closeInfo()" aria-label="关闭简介">×</button>
+    <h2 [id]="controlId('finder-info-title')">简介</h2>
+  </header>
+  <div class="finder-info-body" *ngIf="infoItem as item">
+    <div class="info-name"><ng-container *ngTemplateOutlet="art; context: { $implicit: item }"></ng-container><strong>{{item.name}}</strong></div>
+    <dl>
+      <div><dt>种类</dt><dd>{{type(item)}}</dd></div>
+      <div *ngIf="!item.folder && item.preview !== 'link'"><dt>大小</dt><dd>{{size(item)}}</dd></div>
+      <div><dt>创建时间</dt><dd>{{item.created_at | date:'yyyy年M月d日 HH:mm'}}</dd></div>
+    </dl>
+  </div>
+</dialog>
+
+<dialog #previewDialog class="preview-dialog" [attr.aria-labelledby]="controlId('preview-title')" (cancel)="closePreview($event)">
   <div class="preview-toolbar">
-    <h2 id="preview-title">{{modalItem?.name}}</h2>
+    <button class="preview-close" type="button" autofocus (click)="closePreview()" aria-label="关闭预览">×</button>
+    <h2 [id]="controlId('preview-title')">{{modalItem?.name}}</h2>
+    <div class="quick-step" *ngIf="quickItems.length > 1">
+      <button type="button" [disabled]="quickIndex === 0" (click)="stepQuick(-1)" aria-label="上一个预览">‹</button>
+      <span>{{quickIndex + 1}} / {{quickItems.length}}</span>
+      <button type="button" [disabled]="quickIndex === quickItems.length - 1" (click)="stepQuick(1)" aria-label="下一个预览">›</button>
+    </div>
     <div class="actions" *ngIf="modalItem as item">
       <button *ngIf="previewError && item.preview" type="button" (click)="loadPreview(item)">重试</button>
-      <button *ngIf="item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
+      <button *ngIf="!item.folder && item.preview !== 'link'" type="button" [disabled]="busy" (click)="download(item)">下载</button>
       <button *ngIf="data?.can_manage" type="button" [disabled]="busy" (click)="createShare(item)">分享</button>
     </div>
-    <button class="preview-close" type="button" autofocus (click)="closePreview()" aria-label="关闭预览">×</button>
   </div>
   <ng-container *ngIf="modalItem as item">
-    <ng-container *ngTemplateOutlet="previewContent; context: { $implicit: item }"></ng-container>
+    <div class="quick-folder" *ngIf="item.folder">
+      <ng-container *ngTemplateOutlet="art; context: { $implicit: item }"></ng-container>
+      <strong>{{item.name}}</strong><span>文件夹</span>
+      <button type="button" (click)="closePreview(); go(item.id)">打开文件夹</button>
+    </div>
+    <ng-container *ngIf="!item.folder"><ng-container *ngTemplateOutlet="previewContent; context: { $implicit: item }"></ng-container></ng-container>
   </ng-container>
 </dialog>
 
 <ng-template #previewContent let-item>
   <p class="quiet" *ngIf="previewLoading">正在读取预览…</p>
   <p class="quiet" *ngIf="previewError" role="alert">{{previewError}}</p>
-  <div *ngIf="preview as file" class="preview" [class.preview-reader]="file.kind === 'markdown'" [class.preview-pdf]="file.kind === 'pdf'" [ngSwitch]="file.kind">
+  <div *ngIf="preview as file" class="preview" [class.preview-link]="file.kind === 'link'" [class.preview-reader]="file.kind === 'markdown'" [class.preview-pdf]="file.kind === 'pdf'" [ngSwitch]="file.kind">
     <img *ngSwitchCase="'image'" [src]="file.url" [alt]="item.name" (error)="previewError = '无法加载图片，可尝试下载。'" referrerpolicy="no-referrer">
     <video *ngSwitchCase="'video'" [src]="file.url" [poster]="item.thumbnail || ''" controls playsinline preload="metadata" (error)="previewError = '当前浏览器无法播放此视频，可下载原文件。'"></video>
     <audio *ngSwitchCase="'audio'" [src]="file.url" controls preload="metadata"></audio>
     <app-pdf-preview *ngSwitchCase="'pdf'" [url]="pdfUrl(item)" [name]="item.name"></app-pdf-preview>
     <markdown *ngSwitchCase="'markdown'" class="selectable-preview" [data]="file.text" [safePreview]="true"></markdown>
     <pre *ngSwitchCase="'text'" class="selectable-preview">{{file.text}}</pre>
-    <a *ngSwitchCase="'link'" [href]="file.url" target="_blank" rel="noopener noreferrer">打开外部链接 ↗</a>
+    <a *ngSwitchCase="'link'" class="link-card" [href]="file.url" [title]="file.url" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'link' }"></ng-container></span>
+      <span class="link-card-text"><strong>{{file.hostname}}</strong><span>{{file.url}}</span></span>
+      <span class="link-card-action" aria-label="在新标签页打开">↗</span>
+    </a>
     <p *ngSwitchDefault class="quiet">此格式可以下载后打开。</p>
     <small *ngIf="file.truncated">仅预览文件开头，下载可查看完整内容。</small>
   </div>
