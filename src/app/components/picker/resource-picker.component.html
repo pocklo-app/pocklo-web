@@ -26,15 +26,23 @@
       <button type="button" *ngFor="let part of listing.breadcrumbs; let last = last" [disabled]="sharing"
         [attr.aria-current]="last ? 'location' : null" (click)="openDirectory(part.id)">{{part.name}}</button>
     </nav>
-    <label class="search"><span aria-hidden="true">⌕</span><input type="search" [ngModel]="query" (ngModelChange)="search($event)"
-      maxlength="256" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录" [disabled]="sharing"></label>
+    <div class="picker-toolbar">
+      <label class="search"><span aria-hidden="true">⌕</span><input type="search" [ngModel]="query" (ngModelChange)="search($event)"
+        maxlength="256" placeholder="搜索此目录及子目录" aria-label="搜索此目录及子目录" [disabled]="sharing"></label>
+      <div class="view-switch" role="group" aria-label="资源视图">
+        <button *ngFor="let option of views" type="button" [attr.aria-label]="option.name" [title]="option.name"
+          [attr.aria-pressed]="view === option.id" (click)="view = option.id">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><svg:use [attr.href]="'assets/finder/icons.svg#' + option.id"></svg:use></svg>
+        </button>
+      </div>
+    </div>
 
-    <section class="results" aria-label="资源列表" [attr.aria-busy]="loading">
+    <section class="results" aria-label="资源浏览" [attr.aria-busy]="loading">
       <p class="message" *ngIf="loading" role="status">正在读取…</p>
       <p class="message" *ngIf="!loading && listing && !listing.entries.length">{{query.trim() ? '没有匹配的资源。' : '这个文件夹是空的。'}}</p>
-      <div *ngIf="!loading">
+      <div *ngIf="!loading" class="entries" [class.icon-view]="view === 'grid'">
         <div class="entry" *ngFor="let item of listing?.entries; trackBy: trackItem" [class.selected]="selected?.id === item.id">
-          <button class="pick" type="button" [attr.aria-pressed]="selected?.id === item.id" [disabled]="sharing"
+          <button class="pick" type="button" [attr.aria-pressed]="selected?.id === item.id" [title]="item.name" [disabled]="sharing"
             (click)="selected = item" (dblclick)="item.folder && openDirectory(item.id)">
             <img [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + (item.preview || 'file') + '.svg'" width="22" height="22" alt="">
             <span><strong>{{item.name}}</strong><small *ngIf="item.location">{{item.location}}</small></span>

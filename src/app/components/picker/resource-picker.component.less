@@ -19,7 +19,8 @@ button:hover:not(:disabled) { background: #e8f1eb; }
 button:disabled { opacity: .5; cursor: default; }
 nav button { padding: 4px 8px; }
 nav [aria-current] { background: #e1ede5; }
-.search { display: flex; align-items: center; gap: 8px; margin: 10px 14px; padding: 3px 8px; border: 1px solid #dbe5dd; border-radius: 9px; background: #fff; }
+.picker-toolbar { display: flex; align-items: stretch; gap: 6px; margin: 10px 14px; }
+.search { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 3px 8px; border: 1px solid #dbe5dd; border-radius: 9px; background: #fff; }
 .search input { width: 100%; min-width: 0; margin: 0; padding: 5px; color: #24372f; border: 0; background: transparent; font-size: 14px; }
 .results { min-height: min(190px, 26dvh); max-height: 44dvh; overflow: auto; padding: 0 10px; }
 .entry { display: flex; align-items: center; border-radius: 9px; }
@@ -42,3 +43,16 @@ footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items:
 :host:has(.embedded) { padding: 6px; background: #f7f7f8; }
 .embedded .results { max-height: 55dvh; }
 .message .primary { margin-top: 8px; }
+
+.view-switch { display: flex; align-items: center; flex: none; gap: 2px; padding: 2px; border: 1px solid #dbe5dd; border-radius: 9px; background: #f6f9f5; }
+.view-switch button { display: grid; place-items: center; width: 31px; min-height: 30px; padding: 0; border: 0; }
+.view-switch button[aria-pressed="true"] { color: #234e3b; background: #dcece2; }
+.view-switch svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.view-switch svg use { pointer-events: none; }
+
+.icon-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 96px), 1fr)); gap: 5px; padding-block: 3px; }
+.icon-view .entry { position: relative; min-width: 0; align-items: stretch; }
+.icon-view .pick { flex-direction: column; justify-content: start; gap: 5px; padding: 9px 5px; text-align: center; }
+.icon-view .pick img { width: 40px; height: 40px; object-fit: contain; }
+.icon-view .pick span { width: 100%; }
+.icon-view .open { position: absolute; top: 3px; right: 3px; min-width: 24px; min-height: 24px; margin: 0; padding: 0; background: #f6f9f5; border-color: #dbe5dd; line-height: 1; }

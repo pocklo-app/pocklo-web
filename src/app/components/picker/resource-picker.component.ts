@@ -57,6 +57,8 @@ export class ResourcePickerComponent implements OnInit, OnDestroy {
   listing?: Workspace;
   selected?: Entry;
   query = '';
+  view: 'list' | 'grid' = 'list';
+  readonly views = [{ id: 'list', name: '列表' }, { id: 'grid', name: '图标' }] as const;
   loading = false;
   sharing = false;
   error = '';
