@@ -40,8 +40,25 @@ footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items:
 .primary { color: #fff; background: #315e4b; border-color: #315e4b; font-weight: 650; text-decoration: none; }
 .primary:hover:not(:disabled) { background: #244a39; }
 
-:host:has(.embedded) { padding: 6px; background: #f7f7f8; }
-.embedded .results { max-height: 55dvh; }
+:host:has(.embedded) {
+  height: ~"calc(100dvh - var(--safe-top) - max(var(--safe-bottom), var(--keyboard-inset)))";
+  min-height: 0;
+  padding: 0;
+}
+
+.picker.embedded {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: auto;
+}
+
+.embedded > :not(.results) { flex: none; }
+.embedded .results { flex: 1; min-height: 0; max-height: none; }
 .message .primary { margin-top: 8px; }
 
 .view-switch { display: flex; align-items: center; flex: none; gap: 2px; padding: 2px; border: 1px solid #dbe5dd; border-radius: 9px; background: #f6f9f5; }
