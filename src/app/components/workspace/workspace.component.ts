@@ -1,3 +1,4 @@
+import { localDrop, UploadEntry } from './local-upload';
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -106,6 +107,10 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   @Output() closeWindow = new EventEmitter<void>();
   @ViewChild('createDialog', { static: true }) private createDialog: ElementRef<HTMLDialogElement>;
   @ViewChild('shareDialog', { static: true }) private shareDialog: ElementRef<HTMLDialogElement>;
+  @ViewChild('deleteDialog', { static: true }) private deleteDialog: ElementRef<HTMLDialogElement>;
+  deleteProgress?: { total: number; completed: number; name: string };
+  deleteError = '';
+  get treeEditing() { return this.tree.editingStructure; }
   createdShare: Share | null = null;
   shareQr = '';
   shareQrError = false;
@@ -201,10 +206,17 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.treeSubscription = this.tree.changed.subscribe(() => {
+    this.treeSubscription = this.tree.changed.subscribe(removed => {
       this.columnRequest++;
       if (this.section === 'files') {
         clearTimeout(this.searchTimer);
+        if (removed?.has(this.data?.resource.id)) {
+          const parent = [...this.data.breadcrumbs].reverse().find(part => !removed.has(part.id));
+          if (parent) {
+            this.go(parent.id);
+            return;
+          }
+        }
         void this.load(!!this.data);
       }
     });
@@ -405,7 +417,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   focusSearch(event: KeyboardEvent) {
-    if (!this.active || event.defaultPrevented || this.busy || this.infoItem || this.createdShare || this.createDialog.nativeElement.open) return;
+    if (!this.active || event.defaultPrevented || this.busy || this.infoItem || this.createdShare || this.createDialog.nativeElement.open || this.deleteDialog.nativeElement.open) return;
     const editable = (event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable]');
     if (this.modalItem) {
       if (editable) return;
@@ -422,7 +434,6 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
       else if (this.menuOpen) this.menuOpen = false;
       else if ((event.target as HTMLElement)?.id?.startsWith('drive-search')) this.closeSearch();
       else if (this.editor) this.cancelEdit();
-      else if (this.deleteTarget) this.deleteTarget = null;
       else if (this.moveItems.length) this.cancelMove();
       else if (this.selected && this.data?.resource.folder) this.closeInspector();
       return;
@@ -527,7 +538,6 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   private setSelection(items: Entry[], active?: Entry, group = items) {
     this.dismissContext();
     this.cancelEdit();
-    this.deleteTarget = null;
     this.selectedIds = new Set(items.map(item => item.id));
     this.selectionItems = group;
     this.selected = active || null;
@@ -718,7 +728,6 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectionAnchor = '';
     this.dismissContext();
     this.closePreview();
-    this.deleteTarget = null;
     this.cancelEdit();
     this.resetPreview();
   }
@@ -818,7 +827,6 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   edit(mode: 'folder' | 'link' | 'rename', item?: Entry) {
-    this.deleteTarget = null;
     this.editor = mode;
     this.renameTarget = item || null;
     this.draft = item?.name || '';
@@ -875,29 +883,74 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   confirmDelete(item: Entry) {
+    if (this.busy || !this.data?.can_manage) return;
     this.cancelEdit();
     this.deleteTarget = item;
+    this.deleteError = '';
+    this.deleteProgress = undefined;
+    this.deleteDialog.nativeElement.showModal();
+    requestAnimationFrame(() => this.findControl('delete-cancel')?.focus());
+  }
+
+  closeDelete() {
+    if (this.busy) return;
+    this.deleteDialog.nativeElement.close();
+    this.deleteTarget = null;
+    this.deleteProgress = undefined;
+  }
+
+  private async deletionOrder(root: Entry) {
+    const order: Entry[] = [];
+    const pending = [root];
+    const seen = new Set<string>();
+    while (pending.length) {
+      const item = pending.pop();
+      if (seen.has(item.id)) throw new Error('目录结构已变化，请刷新后重试。');
+      seen.add(item.id);
+      order.push(item);
+      if (item.folder) {
+        const { entries } = await this.getWorkspace(item.id);
+        for (const child of entries) pending.push(child);
+      }
+    }
+    return order.reverse();
   }
 
   async remove() {
     const item = this.deleteTarget;
-    if (!item) return;
-    await this.perform(async () => {
-      await this.resources.delete_res(item.id);
-      this.tree.clearClipboardItems([item.id]);
-      const current = this.data.resource.id === item.id;
-      const parent = this.data.breadcrumbs.at(-2);
-      this.closeInspector();
-      if (current && parent) this.go(parent.id);
-      this.tree.invalidate();
-      this.notice = '已删除';
-    }, true);
+    if (!item || this.busy || this.tree.editingStructure) return;
+    this.tree.editingStructure = true;
+    this.busy = true;
+    this.deleteError = '';
+    this.deleteProgress = { total: 0, completed: 0, name: item.name };
+    const removed = new Set<string>();
+    try {
+      const order = await this.deletionOrder(item);
+      this.deleteProgress.total = order.length;
+      for (const entry of order) {
+        this.deleteProgress.name = entry.name;
+        await this.resources.delete_res(entry.id, item.folder ? item.id : undefined);
+        removed.add(entry.id);
+        this.deleteProgress.completed++;
+      }
+      this.notice = item.folder ? '已删除 ' + removed.size + ' 项' : '已删除「' + item.name + '」';
+    } catch (error) {
+      const message = this.message(error, '删除失败，请重试。');
+      this.deleteError = removed.size ? '已删除 ' + removed.size + ' 项。' + message : message;
+    } finally {
+      this.busy = false;
+      this.tree.editingStructure = false;
+      if (!this.deleteError) this.closeDelete();
+      if (removed.size) {
+        this.tree.clearClipboardItems([...removed]);
+        this.tree.invalidate(removed);
+      }
+    }
   }
 
   beginMove(item: Entry, showBar = true) {
     if (!item || !this.data?.can_manage) return;
     this.cancelEdit();
-    this.deleteTarget = null;
     const source = this.originFolder(item);
     this.tree.clipboard = { items: this.isSelected(item) ? this.selection : [item], source, showBar };
     if (!this.data.resource.folder && source) this.go(source);
@@ -915,7 +968,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private acceptsMove(items: Entry[], destination: string, source: string) {
-    if (!items.length || !this.data?.can_manage || this.busy || this.tree.moving || destination === source) return false;
+    if (!items.length || !this.data?.can_manage || this.busy || this.tree.editingStructure || destination === source) return false;
     const path = this.data.breadcrumbs;
     const destinationIndex = path.findIndex(folder => folder.id === destination);
     const ancestors = destinationIndex < 0 ? path : path.slice(0, destinationIndex + 1);
@@ -990,17 +1043,32 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     return fallback && { id: fallback.id, name: fallback.name, row: false };
   }
 
+  private isLocalDrop(event: DragEvent) {
+    return event.dataTransfer?.types.includes('Files');
+  }
+
+  @HostListener('window:dragover', ['$event'])
+  @HostListener('window:drop', ['$event'])
+  preventFileNavigation(event: DragEvent) {
+    if (this.isLocalDrop(event)) event.preventDefault();
+  }
+
   dragOver(event: DragEvent, fallback?: Entry) {
+    const upload = this.isLocalDrop(event);
     const drag = this.tree.drag;
-    if (!drag || !event.dataTransfer?.types.includes(FINDER_DRAG_TYPE)) return;
+    if (!upload && (!drag || !event.dataTransfer?.types.includes(FINDER_DRAG_TYPE))) return;
     const target = this.destinationAt(event, fallback);
-    if (!target || !this.acceptsMove(drag.items, target.id, drag.source)) {
+    if (!target || (upload ? !this.canUpload : !this.acceptsMove(drag.items, target.id, drag.source))) {
       this.clearDropTarget();
       return;
     }
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    this.tree.dropTarget = { ...target, windowId: this.windowId };
+    event.dataTransfer.dropEffect = upload ? 'copy' : 'move';
+    this.tree.dropTarget = { ...target, upload, windowId: this.windowId };
+  }
+
+  private get canUpload() {
+    return this.section === 'files' && this.data?.can_manage && !this.busy && !this.tree.editingStructure;
   }
 
   leaveDropZone(event: DragEvent) {
@@ -1019,10 +1087,15 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   drop(event: DragEvent, fallback?: Entry) {
-    const drag = this.tree.drag;
     const target = this.destinationAt(event, fallback);
-    if (!drag || !target || !event.dataTransfer?.types.includes(FINDER_DRAG_TYPE)) return;
     this.clearDropTarget();
+    if (this.isLocalDrop(event)) {
+      event.preventDefault();
+      if (target && this.canUpload) void this.uploadEntries(target.id, localDrop(event.dataTransfer));
+      return;
+    }
+    const drag = this.tree.drag;
+    if (!drag || !target || !event.dataTransfer?.types.includes(FINDER_DRAG_TYPE)) return;
     if (!this.acceptsMove(drag.items, target.id, drag.source)) return;
     event.preventDefault();
     this.tree.drag = undefined;
@@ -1030,8 +1103,8 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async moveTo(items: Entry[], destination: string) {
-    if (this.tree.moving || this.busy) return;
-    this.tree.moving = true;
+    if (this.tree.editingStructure || this.busy) return;
+    this.tree.editingStructure = true;
     try {
       await this.perform(async () => {
         const moved: string[] = [];
@@ -1052,21 +1125,29 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
         this.notice = '已移动 ' + moved.length + ' 项';
       });
     } finally {
-      this.tree.moving = false;
+      this.tree.editingStructure = false;
     }
   }
 
-  async upload(input: HTMLInputElement) {
+  upload(input: HTMLInputElement) {
     const files = Array.from(input.files || []);
     input.value = '';
-    if (!files.length || !this.data?.resource.folder) return;
-    const root = this.data.resource.id;
+    if (!files.length || !this.canUpload || !this.data.resource.folder) return;
+    void this.uploadEntries(this.data.resource.id, async () => files.map(file => ({
+      path: file.webkitRelativePath.split('/').slice(0, -1), file,
+    })));
+  }
+
+  private async uploadEntries(root: string, read: () => Promise<UploadEntry[]>) {
     await this.perform(async () => {
+      this.notice = '正在读取本地项目…';
+      const entries = await read();
+      if (!entries.length) throw new Error('没有可上传的项目。');
       const folders = new Map<string, string>([['', root]]);
+      const totalFiles = entries.filter(entry => entry.file).length;
       let uploaded = 0;
       try {
-        for (const file of files) {
-          const segments = file.webkitRelativePath.split('/').slice(0, -1);
+        for (const { path: segments, file } of entries) {
           let path = '';
           for (const segment of segments) {
             const next = path ? path + '/' + segment : segment;
@@ -1076,15 +1157,22 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             path = next;
           }
-          this.notice = '上传 ' + (uploaded + 1) + ' / ' + files.length + ' · ' + file.name;
-          const token = await this.resources.get_upload_token(folders.get(path), { filename: file.name });
-          await this.api.api_upload_file(token.key, token.upload_token, file, null);
-          uploaded++;
+          if (file) {
+            this.notice = '上传 ' + (uploaded + 1) + ' / ' + totalFiles + ' · ' + file.name;
+            const token = await this.resources.get_upload_token(folders.get(path), { filename: file.name });
+            await this.api.api_upload_file(token.key, token.upload_token, file, null);
+            uploaded++;
+          }
         }
+      } catch (error) {
+        const message = this.message(error, '上传失败，请重试。');
+        const completed = uploaded + folders.size - 1;
+        throw new Error(completed ? '已完成 ' + completed + ' 项。' + message : message);
       } finally {
         this.tree.invalidate();
       }
-      this.notice = '已上传 ' + uploaded + ' 个文件';
+      const created = folders.size - 1;
+      this.notice = created ? '已上传 ' + uploaded + ' 个文件，创建 ' + created + ' 个文件夹' : '已上传 ' + uploaded + ' 个文件';
     });
   }
 

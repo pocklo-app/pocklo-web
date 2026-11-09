@@ -11,11 +11,11 @@ export const FINDER_DRAG_TYPE = 'application/x-pocklo-finder';
 
 @Injectable()
 export class FinderTree {
-  readonly changed = new Subject<void>();
+  readonly changed = new Subject<ReadonlySet<string> | undefined>();
   drag?: MoveSelection & { windowId: number };
-  dropTarget?: { id: string; name: string; row: boolean; windowId: number };
+  dropTarget?: { id: string; name: string; row: boolean; upload?: boolean; windowId: number };
   clipboard?: MoveSelection & { showBar: boolean };
-  moving = false;
+  editingStructure = false;
 
   private cache = new Map<string, { data: Workspace; time: number }>();
   private requests = new Map<string, Promise<Workspace>>();
@@ -51,9 +51,9 @@ export class FinderTree {
     this.clipboard = items.length ? { ...this.clipboard, items } : undefined;
   }
 
-  invalidate() {
+  invalidate(removed?: ReadonlySet<string>) {
     this.cache.clear();
     this.requests.clear();
-    this.changed.next();
+    this.changed.next(removed);
   }
 }

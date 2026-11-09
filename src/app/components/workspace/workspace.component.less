@@ -516,3 +516,8 @@ button.danger { color: var(--warn); }
 }
 .drop-hint .finder-glyph { width: 14px; height: 14px; }
 .drop-hint span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.delete-progress { display: grid; gap: 4px; padding-block: 6px; color: var(--muted); }
+.delete-progress progress { width: 100%; height: 10px; accent-color: var(--accent); }
+.finder-dialog-actions button.delete-primary { background: #b42330; border-color: #b42330; color: #fff; }
+.finder-dialog-actions button.delete-primary:hover:not(:disabled) { background: #971c27; }

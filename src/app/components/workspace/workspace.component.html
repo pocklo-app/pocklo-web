@@ -29,7 +29,7 @@
 
   <main class="stage">
     <header class="mast" data-window-drag>
-      <button type="button" *ngIf="canCloseWindow" class="window-close" aria-label="关闭窗口" title="关闭窗口" (click)="closeWindow.emit()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'close' }"></ng-container></button>
+      <button type="button" *ngIf="canCloseWindow" class="window-close" [disabled]="busy" aria-label="关闭窗口" title="关闭窗口" (click)="closeWindow.emit()"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'close' }"></ng-container></button>
       <div class="navigation-tools" role="group" aria-label="目录导航">
         <button type="button" aria-label="后退" title="后退" [disabled]="busy || (section === 'files' && !canGoBack)" (click)="stepHistory(-1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'back' }"></ng-container></button>
         <button type="button" aria-label="前进" title="前进" [disabled]="busy || section !== 'files' || !canGoForward" (click)="stepHistory(1)"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></button>
@@ -106,7 +106,7 @@
         (dragleave)="leaveDropZone($event)" (contextmenu)="showContext($event)" [class.gallery-listing]="visibleView === 'gallery'">
         <span class="drop-hint" *ngIf="dropTarget as target">
           <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'folder' }"></ng-container>
-          <span>移到「{{target.name}}」</span>
+          <span>{{target.upload ? '上传到' : '移到'}}「{{target.name}}」</span>
         </span>
         <ng-container [ngSwitch]="visibleView">
           <div *ngSwitchCase="'columns'" class="finder-columns" [id]="controlId('finder-columns')" aria-label="分栏浏览">
@@ -190,7 +190,7 @@
         <p class="quiet empty-list" *ngIf="visibleView !== 'columns' && !loading && !entries.length">{{query.trim() ? '没有匹配的文件或文件夹。' : '此文件夹为空'}}</p>
         <p class="quiet" *ngIf="loading && visibleView !== 'columns'">正在读取…</p>
         <p class="quiet" *ngIf="data.has_more">已显示前 {{entries.length}} 项，可以输入更具体的关键词。</p>
-        <div class="selection-bar" *ngIf="(moveItems.length && showMoveBar) || operationError || editor === 'rename' || deleteTarget">
+        <div class="selection-bar" *ngIf="(moveItems.length && showMoveBar) || operationError || editor === 'rename'">
           <ng-container *ngIf="moveItems.length && showMoveBar && data.can_manage">
             <span class="selection-name">待移动 · {{moveItems.length === 1 ? moveItems[0].name : moveItems.length + ' 项'}}</span>
             <div class="actions" aria-label="选择移动目标">
@@ -199,7 +199,6 @@
             </div>
           </ng-container>
           <ng-container *ngTemplateOutlet="renameForm"></ng-container>
-          <ng-container *ngIf="deleteTarget as item"><ng-container *ngTemplateOutlet="deleteConfirmation; context: { $implicit: item }"></ng-container></ng-container>
           <p class="operation-error" *ngIf="operationError && editor !== 'link' && editor !== 'folder'" role="alert">{{operationError}}</p>
         </div>
       </section>
@@ -255,7 +254,6 @@
               <ng-container *ngTemplateOutlet="manageButtons; context: { $implicit: item }"></ng-container>
             </div>
             <ng-container *ngTemplateOutlet="renameForm"></ng-container>
-            <ng-container *ngTemplateOutlet="deleteConfirmation; context: { $implicit: item }"></ng-container>
             <p class="operation-error" *ngIf="!data.resource.folder && operationError" role="alert">{{operationError}}</p>
           </ng-template>
         </ng-container>
@@ -298,14 +296,6 @@
   <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" class="danger" [disabled]="busy" (click)="confirmDelete(item)">删除</button>
 </ng-template>
 
-<ng-template #deleteConfirmation let-item>
-  <div class="delete-confirmation actions" *ngIf="deleteTarget?.id === item.id" role="group" aria-label="确认删除">
-    <p>删除「{{item.name}}」后无法撤销。</p>
-    <button type="button" [disabled]="busy" (click)="deleteTarget = null">取消</button>
-    <button type="button" class="danger" [disabled]="busy" (click)="remove()">确认删除</button>
-  </div>
-</ng-template>
-
 <ng-template #renameForm>
   <form *ngIf="editor === 'rename'" class="inline-editor detail-editor" (ngSubmit)="saveEdit()">
     <label [attr.for]="controlId('file-draft')">新名称</label>
@@ -343,6 +333,25 @@
   <button role="menuitem" type="button" *ngIf="!selected" [disabled]="!canOpenWindow" (click)="openWindow()">新建窗口</button>
   <button role="menuitem" type="button" *ngIf="!selected" (click)="dismissContext(); load()">刷新</button>
 </div>
+
+<dialog #deleteDialog class="preview-dialog finder-sheet" [attr.aria-labelledby]="controlId('delete-title')"
+  [attr.aria-describedby]="controlId('delete-description')" (cancel)="$event.preventDefault(); closeDelete()">
+  <header><h2 [id]="controlId('delete-title')">{{deleteTarget?.folder ? '删除文件夹？' : '删除资源？'}}</h2></header>
+  <div class="finder-form" *ngIf="deleteTarget as item">
+    <p [id]="controlId('delete-description')">
+      将永久删除「{{item.name}}」{{item.folder ? '及其中的所有子文件和子文件夹' : ''}}。此操作无法撤销。
+    </p>
+    <div *ngIf="deleteProgress as progress" class="delete-progress">
+      <progress [attr.value]="progress.total ? progress.completed : null" [max]="progress.total || 1" aria-label="删除进度"></progress>
+      <p role="status">{{progress.total ? progress.completed + ' / ' + progress.total + ' 项 · ' + progress.name : '正在读取目录内容…'}}</p>
+    </div>
+    <p *ngIf="deleteError" class="operation-error" role="alert">{{deleteError}}</p>
+    <div class="finder-dialog-actions">
+      <button type="button" [id]="controlId('delete-cancel')" [disabled]="busy" (click)="closeDelete()">{{deleteError ? '关闭' : '取消'}}</button>
+      <button type="button" class="delete-primary" [disabled]="busy || treeEditing" (click)="remove()">{{busy ? '正在删除…' : deleteError ? '重试删除' : '永久删除'}}</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog #createDialog class="preview-dialog finder-sheet" [attr.aria-labelledby]="controlId('create-title')"
   (cancel)="$event.preventDefault(); !busy && cancelEdit()">

@@ -69,9 +69,9 @@ export class ResourceService {
       .put(`/api/res/${res_str_id}`, data);
   }
 
-  public delete_res(res_str_id: string) {
-    return this.baseService
-      .del(`/api/res/${res_str_id}`);
+  public delete_res(res_str_id: string, within?: string) {
+    const scope = within ? `?within=${encodeURIComponent(within)}` : '';
+    return this.baseService.del(`/api/res/${encodeURIComponent(res_str_id)}${scope}`);
   }
 
   public modify_res_cover(res_str_id: string, data: {cover: string, cover_type: number}) {
