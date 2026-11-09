@@ -27,8 +27,8 @@ nav [aria-current] { background: #e1ede5; }
 .entry.selected { background: #e1efe7; }
 .pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; text-align: left; }
 .entry button { border-color: transparent; background: transparent; }
-.pick img { flex: none; }
-.pick span { min-width: 0; }
+.entry-art { position: relative; flex: none; display: grid; place-items: center; width: 22px; height: 22px; }
+.entry-label { min-width: 0; }
 .pick strong, .pick small, .selection strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .open { flex: none; margin-inline-end: 4px; padding: 2px 12px; font-size: 19px; }
 .message { padding: 10px 15px; }
@@ -53,6 +53,9 @@ footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items:
 .icon-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 96px), 1fr)); gap: 5px; padding-block: 3px; }
 .icon-view .entry { position: relative; min-width: 0; align-items: stretch; }
 .icon-view .pick { flex-direction: column; justify-content: start; gap: 5px; padding: 9px 5px; text-align: center; }
-.icon-view .pick img { width: 40px; height: 40px; object-fit: contain; }
-.icon-view .pick span { width: 100%; }
+.icon-view .entry-art { width: 64px; max-width: 100%; height: 48px; }
+.icon-view .entry-icon { width: 40px; height: 40px; object-fit: contain; }
+.icon-view .entry-thumbnail { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #f3f6f3; border-radius: 5px; }
+.entry-thumbnail[hidden] { display: block; visibility: hidden; }
+.icon-view .entry-label { width: 100%; }
 .icon-view .open { position: absolute; top: 3px; right: 3px; min-width: 24px; min-height: 24px; margin: 0; padding: 0; background: #f6f9f5; border-color: #dbe5dd; line-height: 1; }

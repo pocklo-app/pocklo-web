@@ -44,8 +44,13 @@
         <div class="entry" *ngFor="let item of listing?.entries; trackBy: trackItem" [class.selected]="selected?.id === item.id">
           <button class="pick" type="button" [attr.aria-pressed]="selected?.id === item.id" [title]="item.name" [disabled]="sharing"
             (click)="selected = item" (dblclick)="item.folder && openDirectory(item.id)">
-            <img [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + (item.preview || 'file') + '.svg'" width="22" height="22" alt="">
-            <span><strong>{{item.name}}</strong><small *ngIf="item.location">{{item.location}}</small></span>
+            <span class="entry-art">
+              <img class="entry-icon" [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + iconType(item) + '.svg'" width="22" height="22" alt="">
+              <img *ngIf="view === 'grid' && !item.folder && (item.preview === 'image' || item.preview === 'video') && item.thumbnail"
+                #thumbnail class="entry-thumbnail" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
+                hidden (load)="thumbnail.hidden = false" (error)="thumbnail.hidden = true">
+            </span>
+            <span class="entry-label"><strong>{{item.name}}</strong><small *ngIf="item.location">{{item.location}}</small></span>
           </button>
           <button class="open" *ngIf="item.folder" type="button" [attr.aria-label]="'打开文件夹 ' + item.name"
             [disabled]="sharing" (click)="openDirectory(item.id)">›</button>

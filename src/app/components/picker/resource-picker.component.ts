@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { BaseService } from '../../services/base.service';
 import { UserService } from '../../services/user.service';
+import { fileIconType } from '../shared/file-types';
 import type { Entry, Workspace } from '../workspace/workspace.component';
 
 const PREFIX = 'pocklo.picker.';
@@ -59,6 +60,7 @@ export class ResourcePickerComponent implements OnInit, OnDestroy {
   query = '';
   view: 'list' | 'grid' = 'list';
   readonly views = [{ id: 'list', name: '列表' }, { id: 'grid', name: '图标' }] as const;
+  readonly iconType = fileIconType;
   loading = false;
   sharing = false;
   error = '';
