@@ -17,7 +17,7 @@ import {Router} from "@angular/router";
 export class AppComponent implements OnInit {
   @HostListener('window:storage', ['$event'])
   onSessionRemoved(event: StorageEvent) {
-    if (event.storageArea === window.localStorage && event.key === 'token' && event.newValue === null && BaseService.token) {
+    if (window.top === window.self && event.storageArea === window.localStorage && event.key === 'token' && event.newValue === null && BaseService.token) {
       window.location.reload();
     }
   }
@@ -36,6 +36,7 @@ export class AppComponent implements OnInit {
     private router: Router,
   ) {}
   ngOnInit() {
+    if (window.top !== window.self && /^\/picker\/embed\/?$/.test(location.pathname)) return;
     if (this.legacyDestination && Date.now() >= Date.parse(this.migrationUntil + 'T00:00:00+08:00')) {
       window.location.replace(this.legacyDestination);
       return;

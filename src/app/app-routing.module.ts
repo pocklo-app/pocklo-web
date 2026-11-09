@@ -20,6 +20,7 @@ const routes: Routes = [
   { path: 'res/:res_str_id', component: WorkspaceDesktopComponent},
   { path: 'res/:res_str_id/:tab', component: WorkspaceDesktopComponent},
   { path: 'picker/select', component: ResourcePickerComponent },
+  { path: 'picker/embed', component: ResourcePickerComponent, data: { pickerEmbedded: true } },
   { path: 'share/:token', component: WorkspaceDesktopComponent},
   {
     path: 'login', component: HomeComponent,

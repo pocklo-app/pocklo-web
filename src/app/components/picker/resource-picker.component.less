@@ -38,3 +38,7 @@ footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items:
 .actions { display: flex; gap: 6px; }
 .primary { color: #fff; background: #315e4b; border-color: #315e4b; font-weight: 650; text-decoration: none; }
 .primary:hover:not(:disabled) { background: #244a39; }
+
+:host:has(.embedded) { padding: 6px; background: #f7f7f8; }
+.embedded .results { max-height: 55dvh; }
+.message .primary { margin-top: 8px; }

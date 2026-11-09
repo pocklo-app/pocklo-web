@@ -2,12 +2,63 @@
 
 ## 嵌入资源选择器
 
-网页可以通过 iframe 加入「从小兜选择资源」按钮。用户在小兜窗口登录、搜索和确认分享后，宿主网页只接收本次创建的分享链接。这个流程不需要注册 OAuth 应用或填写密钥。分享可以在小兜的「我的分享」中撤销。
+### 宿主已有小兜 OAuth 授权
+
+将 iframe 指向 `/picker/embed/?mode=oauth&origin=<宿主 origin>`。选择器加载后会立即请宿主读取当前用户的资源。具备 `files.read` 时可以直接浏览，具备 `shares.create` 时可以在 iframe 内确认并创建分享链接。两步都在当前网页完成。
+
+宿主收到 `pocklo.picker.ready` 后，返回 `{ type: 'pocklo.picker.init', version: 1, canShare: true }`。只在当前授权包含 `shares.create` 时将 `canShare` 设为 `true`。选择器随后会发出 `pocklo.picker.request`，每个请求带有 `requestId` 和 `action`。
+
+| action | 消息字段 | 宿主服务端操作与返回值 |
+| --- | --- | --- |
+| `files` | `resourceId`、`query`、`offset` | 调用 OAuth `GET files/` 或 `GET files/{resource_id}/`，原样返回 `resource`、`entries`、`has_more` 和 `next_offset`。空 `resourceId` 表示根目录 |
+| `share` | `resourceId`、`operationId` | 调用 OAuth `POST shares/`，使用 `operationId` 作为幂等键，返回 `{ url }` |
+
+宿主应在每次请求时从自身登录会话解析当前用户，并在服务端使用该用户的 OAuth 授权。iframe 消息中无需传送 OAuth 令牌、客户端密钥或账号 ID。服务端继续执行现有权限检查。
+
+以下是使用现有 Frienden API 客户端的消息处理示例。初始化监听器后再设置 iframe 的 `src`，组件卸载时移除监听器。
+
+```js
+const pockloOrigin = 'https://pocklo.jyonn.space';
+
+async function onPickerMessage(event) {
+  if (event.origin !== pockloOrigin || event.source !== frame.contentWindow ||
+      event.data?.version !== 1) return;
+  const message = event.data;
+  const reply = (type, fields) => event.source.postMessage({ type, version: 1, ...fields }, pockloOrigin);
+
+  if (message.type === 'pocklo.picker.ready') {
+    // 此处使用 Frienden 已确认为 connected 的连接状态。
+    reply('pocklo.picker.init', { canShare: true });
+  } else if (message.type === 'pocklo.picker.request' &&
+             ['files', 'share'].includes(message.action) &&
+             typeof message.requestId === 'string') {
+    const { requestId, resourceId, query, offset, operationId } = message;
+    try {
+      const signal = AbortSignal.timeout(12000);
+      const result = message.action === 'files'
+        ? await api.pockloFiles(resourceId, offset, signal, query)
+        : await api.pockloShare(resourceId, operationId, signal);
+      reply('pocklo.picker.response', { requestId, result });
+    } catch (error) {
+      reply('pocklo.picker.response', { requestId, error: error.identifier || 'unavailable' });
+    }
+  } else if (message.type === 'pocklo.picker.selected') {
+    onShareSelected(message.url);
+  }
+}
+
+window.addEventListener('message', onPickerMessage);
+frame.src = pockloOrigin + '/picker/embed/?mode=oauth&origin=' + encodeURIComponent(location.origin);
+```
+
+### 宿主尚未接入 OAuth
+
+网页可以通过 iframe 直接嵌入小兜资源选择器。用户在小兜窗口登录并允许浏览后，可以留在 iframe 内浏览目录、搜索和选择资源。确认分享时会打开小兜窗口，确认后宿主网页只接收本次创建的分享链接。这个流程不需要注册 OAuth 应用或填写密钥。分享可以在小兜的「我的分享」中撤销。
 
 下面示例将宿主网页的准确 origin 传给选择器，并检查返回消息的来源。生产宿主使用 HTTPS，本机测试支持 HTTP 回环地址。
 
 ```html
-<iframe id="pocklo-picker" title="从小兜选择资源" width="100%" height="105"
+<iframe id="pocklo-picker" title="从小兜选择资源" width="100%" height="580"
   style="border:0" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
 </iframe>
 <a id="pocklo-share" hidden>查看分享</a>
@@ -28,11 +79,11 @@
       link.hidden = false;
     }
   });
-  frame.src = origin + '/assets/picker/index.html?origin=' + encodeURIComponent(location.origin);
+  frame.src = origin + '/picker/embed/?origin=' + encodeURIComponent(location.origin);
 </script>
 ```
 
-选择器也会发送 `pocklo.picker.cancelled` 和 `pocklo.picker.error`，方便宿主处理取消或弹窗被拦截。请让用户点击 iframe 内的按钮来开启小兜窗口。宿主需允许嵌入小兜来源并允许弹窗。若站点的浏览器隔离策略切断了弹窗与开启者的连接，选择器会显示连接中断。
+选择器也会发送 `pocklo.picker.cancelled` 和 `pocklo.picker.error`，方便宿主处理取消或弹窗被拦截。旧的 `/assets/picker/index.html` 会跳转到同一个嵌入页。已有嵌入请把 iframe 高度调整到约 580 像素，给文件列表留出空间。宿主需允许嵌入小兜来源并允许弹窗。若站点的浏览器隔离策略切断了弹窗与开启者的连接，选择器会显示连接中断。
 
 ## 注册应用
 

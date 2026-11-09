@@ -33,7 +33,12 @@ export class BaseService {
     this.token = token;
   }
   static loadToken() {
-    const token = window.localStorage.getItem('token');
+    let token: string = null;
+    try {
+      token = window.localStorage.getItem('token');
+    } catch {
+      // Embedded pages may be denied storage by the browser.
+    }
     this.token = token;
     return token;
   }

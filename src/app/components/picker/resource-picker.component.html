@@ -1,4 +1,4 @@
-<main class="picker">
+<main class="picker" [class.embedded]="embedded">
   <header>
     <img src="assets/pocklo.svg" alt="" width="40" height="40">
     <div><h1>从小兜选择资源</h1><p *ngIf="hostOrigin">{{hostOrigin}}</p></div>
@@ -10,10 +10,18 @@
   <section *ngIf="hostOrigin && !sessionReady" class="message" role="status">正在读取登录状态…</section>
   <section *ngIf="hostOrigin && sessionReady && !signedIn" class="message">
     <p>登录后可以选择自己的资源。</p>
-    <a class="primary" [routerLink]="['/']" [queryParams]="{ next: loginPath }">登录小兜</a>
+    <button *ngIf="embedded" type="button" class="primary" [disabled]="sharing" (click)="openPopup('session')">
+      {{sharing ? '正在连接…' : '连接小兜'}}
+    </button>
+    <a *ngIf="!embedded" class="primary" [routerLink]="['/']" [queryParams]="{ next: loginPath }">登录小兜</a>
   </section>
 
-  <ng-container *ngIf="hostOrigin && signedIn">
+  <section *ngIf="hostOrigin && signedIn && action === 'session'" class="message">
+    <p>允许在此网页的小兜选择器中浏览你的目录和资源名称。</p>
+    <button class="primary" type="button" [disabled]="sharing" (click)="authorizeBrowsing()">允许浏览</button>
+  </section>
+
+  <ng-container *ngIf="hostOrigin && signedIn && !action">
     <nav *ngIf="listing" aria-label="当前位置">
       <button type="button" *ngFor="let part of listing.breadcrumbs; let last = last" [disabled]="sharing"
         [attr.aria-current]="last ? 'location' : null" (click)="openDirectory(part.id)">{{part.name}}</button>
@@ -35,24 +43,29 @@
             [disabled]="sharing" (click)="openDirectory(item.id)">›</button>
         </div>
       </div>
-      <p *ngIf="listing?.has_more && !loading" class="message">仅显示前 100 个结果，请缩小搜索范围。</p>
+      <button *ngIf="nextOffset !== null && !loading" class="load-more" type="button" [disabled]="sharing" (click)="loadMore()">加载更多</button>
+      <p *ngIf="listing?.has_more && nextOffset === null && !loading" class="message">仅显示前 100 个结果，请缩小搜索范围。</p>
     </section>
-    <p class="message error" *ngIf="error" role="alert">{{error}}
-      <button type="button" *ngIf="!listing" (click)="load()">重试</button>
-    </p>
-    <p class="message" *ngIf="result" role="status">分享链接已创建。<a [href]="result">{{result}}</a></p>
+
   </ng-container>
 
-  <footer>
+  <p class="message" *ngIf="loading && action === 'confirm'" role="status">正在读取所选资源…</p>
+  <p class="message error" *ngIf="error" role="alert">{{error}}
+    <button type="button" *ngIf="signedIn && !listing && action !== 'session'" (click)="load()">重试</button>
+  </p>
+  <p class="message" *ngIf="result" role="status">分享链接已创建。<a [href]="result" target="_blank" rel="noopener noreferrer">查看分享</a></p>
+
+  <footer *ngIf="!embedded || signedIn">
     <div class="selection" *ngIf="selected">
       <strong [title]="selected.name">{{selected.name}}</strong>
       <p>{{selected.folder ? '持有链接的人可查看此文件夹及其子资源。' : '持有链接的人可查看此资源。'}}</p>
     </div>
     <div class="actions">
       <button type="button" [disabled]="sharing" (click)="cancel()">取消</button>
-      <button class="primary" *ngIf="hostOrigin && signedIn" type="button"
-        [disabled]="!selected || !listing?.can_manage || loading || sharing || !!result" (click)="share()">
-        {{sharing ? '正在创建…' : '创建分享链接'}}
+      <p *ngIf="delegated && signedIn && listing && !listing.can_manage">当前授权仅可浏览资源。</p>
+      <button class="primary" *ngIf="(!delegated || listing?.can_manage) && hostOrigin && signedIn && action !== 'session'" type="button"
+        [disabled]="!selected || !listing?.can_manage || loading || sharing || (!embedded && !!result)" (click)="share()">
+        {{sharing ? '正在处理…' : embedded && !delegated ? '继续分享' : '创建分享链接'}}
       </button>
     </div>
   </footer>
