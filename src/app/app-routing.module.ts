@@ -1,6 +1,6 @@
 import { ResourcePickerComponent } from './components/picker/resource-picker.component';
 import { NgModule, inject} from "@angular/core";
-import { Router, RouterModule, Routes } from "@angular/router";
+import { Router, RouterModule, Routes, UrlMatcher } from "@angular/router";
 import { WorkspaceDesktopComponent } from "./components/workspace/workspace-desktop.component";
 import { ResHomeComponent } from "./components/res/res-home.component";
 import { FriendenAccountComponent } from "./components/user/frienden-account.component";
@@ -11,14 +11,20 @@ import { CliComponent } from "./components/base/cli.component";
 
 import { DeveloperComponent } from "./components/developer/developer.component";
 
+// Keep the same Finder desktop mounted as its main window changes directories.
+const ownedWorkspace: UrlMatcher = segments => {
+  if (segments[0]?.path !== 'res' || segments.length > 3) return null;
+  return segments[1]
+    ? { consumed: segments, posParams: { res_str_id: segments[1] } }
+    : { consumed: segments };
+};
+
 const routes: Routes = [
   { path: '', component: HomeComponent},
   { path: 'cli', component: CliComponent},
   { path: 'user/refresh', component: RefreshComponent},
-  { path: 'res', component: ResHomeComponent},
   { path: 'res/next/:next', component: ResHomeComponent},
-  { path: 'res/:res_str_id', component: WorkspaceDesktopComponent},
-  { path: 'res/:res_str_id/:tab', component: WorkspaceDesktopComponent},
+  { matcher: ownedWorkspace, component: WorkspaceDesktopComponent},
   { path: 'picker/select', component: ResourcePickerComponent },
   { path: 'picker/embed', component: ResourcePickerComponent, data: { pickerEmbedded: true } },
   { path: 'share/:token', component: WorkspaceDesktopComponent},

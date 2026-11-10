@@ -18,7 +18,7 @@ if (moveUntil) {
 }
 
 await copyFile(indexPath, fallbackPath);
-for (const route of ['cli', 'developer', 'developer/docs', 'developer/admin', 'account/applications', 'oauth/authorize', 'picker/select', 'picker/embed']) {
+for (const route of ['res', 'cli', 'developer', 'developer/docs', 'developer/admin', 'account/applications', 'oauth/authorize', 'picker/select', 'picker/embed']) {
   const directory = join(outputDir, route);
   await mkdir(directory, { recursive: true });
   await copyFile(indexPath, join(directory, 'index.html'));

@@ -14,7 +14,7 @@ export class RefreshComponent implements OnInit {
   ngOnInit() {
     this.userService.api_get_info()
       .then(() => {
-        this.router.navigate(['/res', this.userService.user.rootRes])
+        void this.router.navigate(['/res'], { replaceUrl: true });
       })
       .catch(() => {
         void this.router.navigate(['/'], { replaceUrl: true });

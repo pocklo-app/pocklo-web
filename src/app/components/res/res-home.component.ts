@@ -20,9 +20,9 @@ export class ResHomeComponent implements OnInit {
   jump_user_home(user) {
     if (user) {
       if (this.next_url) {
-        this.router.navigate([decodeURIComponent(this.next_url)]);
+        void this.router.navigate([decodeURIComponent(this.next_url)], { replaceUrl: true });
       } else {
-        this.router.navigate(['/res', this.userService.user.rootRes]);
+        void this.router.navigate(['/res'], { replaceUrl: true });
       }
     }
   }

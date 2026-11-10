@@ -1,4 +1,5 @@
 import { localDrop, UploadEntry } from './local-upload';
+import { Location } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
@@ -155,7 +156,9 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   private historyScope = '';
   private pendingColumnFile: { folder: string; id: string };
 
-  private routeSubscription: Subscription;
+  private readonly routeSubscription = new Subscription();
+  private browserVisit = 0;
+  private lastBrowserVisit = 0;
   private treeSubscription: Subscription;
   private resizeObserver: ResizeObserver;
   private searchTimer: ReturnType<typeof setTimeout>;
@@ -168,6 +171,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     private host: ElementRef<HTMLElement>,
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private api: BaseService,
     private resources: ResourceService,
     private tree: FinderTree,
@@ -196,20 +200,45 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     let routeKey: string;
     const sync = () => {
       const share = this.route.snapshot.paramMap.get('token') || '';
-      const id = (share ? this.route.snapshot.queryParamMap.get('folder') : this.route.snapshot.paramMap.get('res_str_id')) || '';
-      const settings = this.route.snapshot.queryParamMap.get('settings') === '1';
+      const params = this.route.snapshot.queryParamMap;
+      const settings = params.get('settings') === '1';
+      const routeId = this.route.snapshot.paramMap.get('res_str_id');
+      const navigation = this.router.getCurrentNavigation();
+      const state = this.location.getState() as { finderVisit?: number; accountMessage?: string };
+      if (!share) {
+        if (!this.user.user) {
+          if (this.user.has_get_user) {
+            void this.router.navigate(['/'], { queryParams: { next: this.location.path(true) }, replaceUrl: true });
+          }
+          return;
+        }
+        this.browserVisit = state.finderVisit ?? 0;
+        if (navigation?.trigger === 'imperative' && !navigation.extras.replaceUrl) {
+          this.lastBrowserVisit = this.browserVisit;
+        } else {
+          this.lastBrowserVisit = Math.max(this.lastBrowserVisit, this.browserVisit);
+        }
+      }
+      const root = this.user.user?.rootRes;
+      const id = (share ? params.get('folder') : routeId || root) || '';
       const key = JSON.stringify([share, id, settings]);
-      if (key === routeKey) return;
-      routeKey = key;
-      this.navigateFolder(id, share);
-      if (settings) {
-        this.section = 'account';
-        const message = this.router.getCurrentNavigation()?.extras.state?.['accountMessage'];
-        if (message) this.notice = message;
+      if (key !== routeKey) {
+        routeKey = key;
+        this.navigateFolder(id, share);
+        if (settings) {
+          this.section = 'account';
+          const message = navigation?.extras.state?.['accountMessage'] || state.accountMessage;
+          if (message) this.notice = message;
+        }
+      }
+      if (!share && routeId === root) {
+        void this.router.navigate(['/res'], { queryParams: this.route.snapshot.queryParams,
+          fragment: this.route.snapshot.fragment, replaceUrl: true, state });
       }
     };
     sync();
-    this.routeSubscription = this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(sync);
+    this.routeSubscription.add(this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(sync));
+    this.routeSubscription.add(this.user.user_update_center.subscribe(sync));
   }
 
   private navigateFolder(id: string, share = this.shareToken, record = true) {
@@ -274,8 +303,12 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.visitIndex = this.visits.length - 1;
   }
 
-  get canGoBack() { return this.visitIndex > 0; }
-  get canGoForward() { return this.visitIndex < this.visits.length - 1; }
+  private get followsBrowser() { return this.windowId === 0 && !this.shareToken; }
+
+  get canGoBack() { return (this.followsBrowser ? this.browserVisit : this.visitIndex) > 0; }
+  get canGoForward() {
+    return this.followsBrowser ? this.browserVisit < this.lastBrowserVisit : this.visitIndex < this.visits.length - 1;
+  }
 
   stepHistory(direction: -1 | 1) {
     if (this.section !== 'files') {
@@ -283,6 +316,10 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     if (this.busy || (direction === -1 ? !this.canGoBack : !this.canGoForward)) return;
+    if (this.followsBrowser) {
+      this.location.historyGo(direction);
+      return;
+    }
     this.visitIndex += direction;
     this.navigateFolder(this.visits[this.visitIndex], this.shareToken, false);
   }
@@ -300,7 +337,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.resizeObserver.disconnect();
     this.closePreview();
-    this.routeSubscription?.unsubscribe();
+    this.routeSubscription.unsubscribe();
     this.treeSubscription.unsubscribe();
     this.endDrag();
     clearTimeout(this.toastTimer);
@@ -460,7 +497,13 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   go(id: string) {
-    if (id !== this.data?.resource.id) this.navigateFolder(id);
+    if (id === this.resourceId) return;
+    if (this.followsBrowser) {
+      const commands = id === this.user.user?.rootRes ? ['/res'] : ['/res', id];
+      void this.router.navigate(commands, { state: { finderVisit: this.browserVisit + 1 } });
+    } else {
+      this.navigateFolder(id);
+    }
   }
 
   showFiles() {
