@@ -1,9 +1,10 @@
 <ng-template #glyph let-name><svg class="finder-glyph" viewBox="0 0 24 24" aria-hidden="true"><svg:use [attr.href]="'assets/finder/icons.svg#' + name"></svg:use></svg></ng-template>
-<ng-template #art let-item let-thumb="thumbnail">
-  <span class="file-art" aria-hidden="true">
+<ng-template #art let-item let-thumb="thumbnail" let-badge="uploadBadge">
+  <span class="file-art">
     <img draggable="false" class="file-icon" [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + iconType(item) + '.svg'" alt="">
     <img draggable="false" class="file-thumbnail" *ngIf="thumb && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
       (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false">
+    <span *ngIf="badge && !shareToken && newUploads.has(item.id)" class="new-upload-dot" role="img" aria-label="新上传" title="新上传"></span>
   </span>
 </ng-template>
 
@@ -133,7 +134,7 @@
                   [attr.data-finder-item]="item.id" [title]="item.name" [disabled]="busy"
                   (click)="pickColumn(item, column, $event)" (dblclick)="openItem(item, $event)"
                   (keydown)="browseKeys($event, item, column.entries)" (keydown.enter)="enterItem($event, item)">
-                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item }"></ng-container>
+                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item, uploadBadge: true }"></ng-container>
                   <span class="entry-label">{{item.name}}</span>
                   <ng-container *ngIf="item.folder"><ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'forward' }"></ng-container></ng-container>
                 </button>
@@ -163,7 +164,7 @@
                 [attr.data-finder-item]="item.id" [title]="item.name" [disabled]="busy"
                 (click)="pickGallery(item, $event)" (dblclick)="openItem(item, $event)"
                 (keydown)="browseKeys($event, item, entries, true)" (keydown.enter)="enterItem($event, item)">
-                <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: true }"></ng-container>
+                <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: true, uploadBadge: true }"></ng-container>
                 <span class="entry-label">{{item.name}}</span>
               </button>
             </div>
@@ -187,7 +188,7 @@
                 <button class="file-name" type="button" [attr.aria-pressed]="isSelected(item)" [attr.data-finder-item]="item.id"
                   [title]="item.name" [disabled]="busy" (click)="select(item, $event)" (dblclick)="openItem(item, $event)"
                   (keydown)="browseKeys($event, item, entries)" (keydown.enter)="enterItem($event, item)">
-                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: visibleView === 'grid' }"></ng-container>
+                  <ng-container *ngTemplateOutlet="art; context: { $implicit: item, thumbnail: visibleView === 'grid', uploadBadge: true }"></ng-container>
                   <span class="entry-label">{{item.name}}<small *ngIf="query.trim()">{{item.location || '当前目录'}}</small></span>
                 </button>
                 <time class="file-date">{{item.created_at | date:'yyyy-MM-dd'}}</time>

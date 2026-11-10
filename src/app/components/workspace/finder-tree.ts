@@ -12,6 +12,7 @@ export const FINDER_DRAG_TYPE = 'application/x-pocklo-finder';
 @Injectable()
 export class FinderTree {
   readonly changed = new Subject<ReadonlySet<string> | undefined>();
+  readonly newUploads = new Set<string>();
   drag?: MoveSelection & { windowId: number };
   dropTarget?: { id: string; name: string; row: boolean; upload?: boolean; windowId: number };
   clipboard?: MoveSelection & { showBar: boolean };
@@ -52,6 +53,7 @@ export class FinderTree {
   }
 
   invalidate(removed?: ReadonlySet<string>) {
+    removed?.forEach(id => this.newUploads.delete(id));
     this.cache.clear();
     this.requests.clear();
     this.changed.next(removed);

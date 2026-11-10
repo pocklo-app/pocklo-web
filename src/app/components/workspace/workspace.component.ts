@@ -148,6 +148,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   linkUrl = '';
   operationError = '';
   get moveItems() { return this.tree.clipboard?.items ?? []; }
+  get newUploads() { return this.tree.newUploads; }
   get showMoveBar() { return !!this.tree.clipboard?.showBar; }
   marquee: { left: number; top: number; width: number; height: number } | null = null;
   private marqueeStart: { x: number; y: number; base: Entry[] } | null = null;
@@ -265,6 +266,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private navigateFolder(id: string, share = this.shareToken, record = true) {
+    if (!share) this.tree.newUploads.delete(id);
     const scope = share || 'owned';
     if (scope !== this.historyScope) {
       this.historyScope = scope;
@@ -712,6 +714,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   openPreview(item: Entry, event: Event) {
     const dialog = this.previewDialog.nativeElement;
     if (dialog.open) return;
+    if (!this.shareToken) this.tree.newUploads.delete(item.id);
     const candidates = this.isSelected(item) && this.selection.length > 1 ? this.selection : [item];
     this.quickItems = candidates;
     this.quickIndex = Math.max(0, candidates.findIndex(entry => entry.id === item.id));
@@ -732,6 +735,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   stepQuick(direction: -1 | 1) {
     const item = this.quickItems[this.quickIndex + direction];
     if (!item) return;
+    if (!this.shareToken) this.tree.newUploads.delete(item.id);
     this.quickIndex += direction;
     this.modalItem = item;
     this.resetPreview();
@@ -1221,6 +1225,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
               progress.current = '正在创建文件夹 · ' + segment;
               const folder = await this.resources.create_folder(folders.get(path), { folder_name: segment });
               folders.set(next, folder.res_str_id);
+              this.tree.newUploads.add(folder.res_str_id);
               progress.foldersDone++;
             }
             path = next;
@@ -1228,9 +1233,10 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
           if (file) {
             progress.current = file.name;
             const token = await this.resources.get_upload_token(folders.get(path), { filename: file.name });
-            await this.api.api_upload_file(token.key, token.upload_token, file, ({ percentage }) => {
+            const resource: { res_str_id?: string } = await this.api.api_upload_file(token.key, token.upload_token, file, ({ percentage }) => {
               progress.sentBytes = completedBytes + file.size * percentage / 100;
             });
+            if (resource?.res_str_id) this.tree.newUploads.add(resource.res_str_id);
             completedBytes += file.size;
             progress.sentBytes = completedBytes;
             progress.filesDone++;
