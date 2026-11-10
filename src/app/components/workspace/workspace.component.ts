@@ -55,6 +55,19 @@ interface Preview {
   hostname?: string;
 }
 
+interface UploadProgress {
+  destination: string;
+  phase: 'reading' | 'uploading' | 'complete' | 'error';
+  current: string;
+  totalFiles: number;
+  totalFolders: number;
+  filesDone: number;
+  foldersDone: number;
+  totalBytes: number;
+  sentBytes: number;
+  error?: string;
+}
+
 @Component({
   selector: 'app-workspace',
   templateUrl: './workspace.component.html',
@@ -90,6 +103,15 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   private toastTimer: ReturnType<typeof setTimeout>;
   private toast = '';
   private directoryPending = false;
+  uploadProgress?: UploadProgress;
+
+  get uploadPercent() {
+    const progress = this.uploadProgress;
+    if (progress.phase === 'complete') return 100;
+    const total = progress.totalBytes || progress.totalFiles + progress.totalFolders;
+    const done = progress.totalBytes ? progress.sentBytes : progress.filesDone + progress.foldersDone;
+    return total ? Math.min(99, Math.floor(done / total * 100)) : 0;
+  }
 
   get notice() { return this.toast; }
   set notice(value: string) {
@@ -1078,7 +1100,9 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:dragover', ['$event'])
   @HostListener('window:drop', ['$event'])
   preventFileNavigation(event: DragEvent) {
-    if (this.isLocalDrop(event)) event.preventDefault();
+    if (!this.isLocalDrop(event)) return;
+    event.preventDefault();
+    if (event.type === 'drop') this.clearDropTarget();
   }
 
   dragOver(event: DragEvent, fallback?: Entry) {
@@ -1119,7 +1143,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.clearDropTarget();
     if (this.isLocalDrop(event)) {
       event.preventDefault();
-      if (target && this.canUpload) void this.uploadEntries(target.id, localDrop(event.dataTransfer));
+      if (target && this.canUpload) void this.uploadEntries(target, localDrop(event.dataTransfer));
       return;
     }
     const drag = this.tree.drag;
@@ -1161,46 +1185,65 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     const files = Array.from(input.files || []);
     input.value = '';
     if (!files.length || !this.canUpload || !this.data.resource.folder) return;
-    void this.uploadEntries(this.data.resource.id, async () => files.map(file => ({
+    void this.uploadEntries(this.data.resource, async () => files.map(file => ({
       path: file.webkitRelativePath.split('/').slice(0, -1), file,
     })));
   }
 
-  private async uploadEntries(root: string, read: () => Promise<UploadEntry[]>) {
+  private async uploadEntries(destination: Pick<Entry, 'id' | 'name'>, read: () => Promise<UploadEntry[]>) {
     await this.perform(async () => {
-      this.notice = '正在读取本地项目…';
-      const entries = await read();
-      if (!entries.length) throw new Error('没有可上传的项目。');
-      const folders = new Map<string, string>([['', root]]);
-      const totalFiles = entries.filter(entry => entry.file).length;
-      let uploaded = 0;
+      const progress: UploadProgress = {
+        destination: destination.name, phase: 'reading', current: '',
+        totalFiles: 0, totalFolders: 0, filesDone: 0, foldersDone: 0, totalBytes: 0, sentBytes: 0,
+      };
+      this.uploadProgress = progress;
+      const folders = new Map<string, string>([['', destination.id]]);
+      let completedBytes = 0;
       try {
+        const entries = await read();
+        if (!entries.length) throw new Error('没有可上传的项目。');
+        const paths = new Set<string>();
+        for (const { path, file } of entries) {
+          for (let depth = 1; depth <= path.length; depth++) paths.add(path.slice(0, depth).join('/'));
+          if (file) {
+            progress.totalFiles++;
+            progress.totalBytes += file.size;
+          }
+        }
+        progress.totalFolders = paths.size;
+        progress.phase = 'uploading';
+
         for (const { path: segments, file } of entries) {
           let path = '';
           for (const segment of segments) {
             const next = path ? path + '/' + segment : segment;
             if (!folders.has(next)) {
+              progress.current = '正在创建文件夹 · ' + segment;
               const folder = await this.resources.create_folder(folders.get(path), { folder_name: segment });
               folders.set(next, folder.res_str_id);
+              progress.foldersDone++;
             }
             path = next;
           }
           if (file) {
-            this.notice = '上传 ' + (uploaded + 1) + ' / ' + totalFiles + ' · ' + file.name;
+            progress.current = file.name;
             const token = await this.resources.get_upload_token(folders.get(path), { filename: file.name });
-            await this.api.api_upload_file(token.key, token.upload_token, file, null);
-            uploaded++;
+            await this.api.api_upload_file(token.key, token.upload_token, file, ({ percentage }) => {
+              progress.sentBytes = completedBytes + file.size * percentage / 100;
+            });
+            completedBytes += file.size;
+            progress.sentBytes = completedBytes;
+            progress.filesDone++;
           }
         }
+        progress.phase = 'complete';
       } catch (error) {
-        const message = this.message(error, '上传失败，请重试。');
-        const completed = uploaded + folders.size - 1;
-        throw new Error(completed ? '已完成 ' + completed + ' 项。' + message : message);
+        progress.phase = 'error';
+        progress.sentBytes = completedBytes;
+        progress.error = this.message(error, '上传失败，请重试。');
       } finally {
-        this.tree.invalidate();
+        if (progress.totalFiles || progress.totalFolders) this.tree.invalidate();
       }
-      const created = folders.size - 1;
-      this.notice = created ? '已上传 ' + uploaded + ' 个文件，创建 ' + created + ' 个文件夹' : '已上传 ' + uploaded + ' 个文件';
     });
   }
 

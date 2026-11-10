@@ -104,10 +104,20 @@
       <section class="listing" *ngIf="data.resource.folder" aria-label="文件浏览"
         (dragover)="dragOver($event, data.resource)" (drop)="drop($event, data.resource)"
         (dragleave)="leaveDropZone($event)" (contextmenu)="showContext($event)" [class.gallery-listing]="visibleView === 'gallery'">
-        <span class="drop-hint" *ngIf="dropTarget as target">
-          <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'folder' }"></ng-container>
-          <span>{{target.upload ? '上传到' : '移到'}}「{{target.name}}」</span>
-        </span>
+        <ng-container *ngIf="dropTarget as target">
+          <div *ngIf="target.upload; else moveHint" class="upload-drop">
+            <div class="upload-drop-label">
+              <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'up' }"></ng-container>
+              <div><strong>松开以上传</strong><span>上传到「{{target.name}}」</span></div>
+            </div>
+          </div>
+          <ng-template #moveHint>
+            <span class="drop-hint">
+              <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'folder' }"></ng-container>
+              <span>移到「{{target.name}}」</span>
+            </span>
+          </ng-template>
+        </ng-container>
         <ng-container [ngSwitch]="visibleView">
           <div *ngSwitchCase="'columns'" class="finder-columns" [id]="controlId('finder-columns')" aria-label="分栏浏览">
             <p class="quiet" *ngIf="columnLoading && !columns.length">正在读取文件夹…</p>
@@ -269,6 +279,28 @@
       </nav>
       <span class="status-count" *ngIf="data.resource.folder">{{selection.length ? '已选 ' + selection.length + ' 项，共 ' : ''}}{{entries.length}}{{data.has_more ? '+' : ''}} 项</span>
     </footer>
+    <section *ngIf="uploadProgress as upload" class="upload-panel" [class.upload-failed]="upload.phase === 'error'" aria-label="上传进度">
+      <div class="upload-heading">
+        <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'up' }"></ng-container>
+        <div>
+          <strong role="status">{{upload.phase === 'reading' ? '正在读取本地项目…' : upload.phase === 'complete' ? '上传完成' : upload.phase === 'error' ? '上传中断' : '正在上传'}}</strong>
+          <small [title]="upload.destination">目标文件夹 · {{upload.destination}}</small>
+        </div>
+        <button *ngIf="upload.phase === 'complete' || upload.phase === 'error'" type="button" aria-label="关闭上传进度" (click)="uploadProgress = undefined">
+          <ng-container *ngTemplateOutlet="glyph; context: { $implicit: 'close' }"></ng-container>
+        </button>
+      </div>
+      <progress max="100" [attr.value]="upload.phase === 'reading' ? null : uploadPercent" aria-label="上传进度"></progress>
+      <div class="upload-counts" *ngIf="upload.totalFiles || upload.totalFolders">
+        <div>
+          <span *ngIf="upload.totalFiles">文件 {{upload.filesDone}} / {{upload.totalFiles}}</span>
+          <span *ngIf="upload.totalFolders">文件夹 {{upload.foldersDone}} / {{upload.totalFolders}}</span>
+        </div>
+        <span>{{uploadPercent}}%</span>
+      </div>
+      <p class="upload-current" *ngIf="upload.phase === 'uploading' && upload.current" [title]="upload.current">{{upload.current}}</p>
+      <p class="upload-error" *ngIf="upload.error" role="alert">{{upload.error}}</p>
+    </section>
     <div *ngIf="notice" class="finder-toast" role="status"><span>{{notice}}</span><button type="button" (click)="notice = ''" aria-label="关闭提示">×</button></div>
   </main>
 </div>
