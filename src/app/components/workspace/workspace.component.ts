@@ -140,7 +140,8 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   quickIndex = 0;
   private selectionAnchor = '';
   private selectionItems: Entry[] = [];
-  deleteTarget: Entry | null = null;
+  deleteTargets: Entry[] = [];
+  private deleteRemovedCount = 0;
   sort: 'name' | 'created_at' | 'size' = 'name';
   ascending = true;
   readonly views = FINDER_VIEWS;
@@ -894,10 +895,16 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     }, true);
   }
 
-  confirmDelete(item: Entry) {
-    if (this.busy || !this.data?.can_manage) return;
+  canDeleteItems(items: Entry[]) {
+    return !!this.data?.can_manage && items.length > 0 && items.every(item =>
+      item.id !== this.user.user?.rootRes && (item.id !== this.data.resource.id || this.data.can_delete));
+  }
+
+  confirmDelete(items: Entry[]) {
+    if (this.busy || !this.canDeleteItems(items)) return;
     this.cancelEdit();
-    this.deleteTarget = item;
+    this.deleteTargets = [...items];
+    this.deleteRemovedCount = 0;
     this.deleteError = '';
     this.deleteProgress = undefined;
     this.deleteDialog.nativeElement.showModal();
@@ -907,7 +914,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   closeDelete() {
     if (this.busy) return;
     this.deleteDialog.nativeElement.close();
-    this.deleteTarget = null;
+    this.deleteTargets = [];
     this.deleteProgress = undefined;
   }
 
@@ -929,26 +936,35 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async remove() {
-    const item = this.deleteTarget;
-    if (!item || this.busy || this.tree.editingStructure) return;
+    const targets = this.deleteTargets;
+    if (!this.canDeleteItems(targets) || this.busy || this.tree.editingStructure) return;
     this.tree.editingStructure = true;
     this.busy = true;
     this.deleteError = '';
-    this.deleteProgress = { total: 0, completed: 0, name: item.name };
+    this.deleteProgress = { total: 0, completed: 0, name: '' };
     const removed = new Set<string>();
     try {
-      const order = await this.deletionOrder(item);
-      this.deleteProgress.total = order.length;
-      for (const entry of order) {
+      const order = new Map<string, { entry: Entry; within?: string }>();
+      for (const target of targets) {
+        if (order.has(target.id)) continue;
+        for (const entry of await this.deletionOrder(target)) {
+          if (!order.has(entry.id)) order.set(entry.id, { entry, within: target.folder ? target.id : undefined });
+        }
+      }
+      this.deleteProgress.total = order.size;
+      for (const { entry, within } of order.values()) {
         this.deleteProgress.name = entry.name;
-        await this.resources.delete_res(entry.id, item.folder ? item.id : undefined);
+        await this.resources.delete_res(entry.id, within);
         removed.add(entry.id);
+        this.deleteRemovedCount++;
         this.deleteProgress.completed++;
       }
-      this.notice = item.folder ? '已删除 ' + removed.size + ' 项' : '已删除「' + item.name + '」';
+      this.notice = this.deleteRemovedCount === 1 && !targets[0].folder
+        ? '已删除「' + targets[0].name + '」' : '已删除 ' + this.deleteRemovedCount + ' 项';
     } catch (error) {
       const message = this.message(error, '删除失败，请重试。');
-      this.deleteError = removed.size ? '已删除 ' + removed.size + ' 项。' + message : message;
+      this.deleteError = this.deleteRemovedCount ? '已删除 ' + this.deleteRemovedCount + ' 项。' + message : message;
+      this.deleteTargets = targets.filter(item => !removed.has(item.id));
     } finally {
       this.busy = false;
       this.tree.editingStructure = false;

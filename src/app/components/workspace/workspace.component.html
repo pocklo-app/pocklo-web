@@ -293,7 +293,7 @@
 <ng-template #manageButtons let-item>
   <button type="button" [disabled]="busy" (click)="edit('rename', item)">重命名</button>
   <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" [disabled]="busy" (click)="beginMove(item)">移动</button>
-  <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" class="danger" [disabled]="busy" (click)="confirmDelete(item)">删除</button>
+  <button type="button" *ngIf="canDeleteItems([item])" class="danger" [disabled]="busy" (click)="confirmDelete([item])">删除</button>
 </ng-template>
 
 <ng-template #renameForm>
@@ -322,7 +322,8 @@
       <button role="menuitem" type="button" (click)="dismissContext(true); beginMove(item)">移动到…</button>
       <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); edit('rename', item)">重新命名</button>
       <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); createShare(item)">共享…</button>
-      <button role="menuitem" type="button" *ngIf="selection.length === 1 && (item.id !== data.resource.id || data.can_delete)" class="danger" (click)="dismissContext(true); confirmDelete(item)">删除…</button>
+      <button role="menuitem" type="button" *ngIf="canDeleteItems(selection)" class="danger" [disabled]="treeEditing"
+        (click)="dismissContext(true); confirmDelete(selection)">{{selection.length > 1 ? '删除 ' + selection.length + ' 项…' : '删除…'}}</button>
     </ng-container>
   </ng-container>
   <ng-container *ngIf="data.can_manage && !selected">
@@ -336,10 +337,14 @@
 
 <dialog #deleteDialog class="preview-dialog finder-sheet" [attr.aria-labelledby]="controlId('delete-title')"
   [attr.aria-describedby]="controlId('delete-description')" (cancel)="$event.preventDefault(); closeDelete()">
-  <header><h2 [id]="controlId('delete-title')">{{deleteTarget?.folder ? '删除文件夹？' : '删除资源？'}}</h2></header>
-  <div class="finder-form" *ngIf="deleteTarget as item">
+  <header><h2 [id]="controlId('delete-title')">{{deleteTargets.length > 1 ? '删除 ' + deleteTargets.length + ' 项？' : deleteTargets[0]?.folder ? '删除文件夹？' : '删除资源？'}}</h2></header>
+  <div class="finder-form" *ngIf="deleteTargets[0] as item">
     <p [id]="controlId('delete-description')">
-      将永久删除「{{item.name}}」{{item.folder ? '及其中的所有子文件和子文件夹' : ''}}。此操作无法撤销。
+      <ng-container *ngIf="deleteTargets.length === 1; else batchDeleteDescription">
+        将永久删除「{{item.name}}」{{item.folder ? '及其中的所有子文件和子文件夹' : ''}}。
+      </ng-container>
+      <ng-template #batchDeleteDescription>将永久删除所选的 {{deleteTargets.length}} 项，以及所选文件夹中的所有内容。</ng-template>
+      此操作无法撤销。
     </p>
     <div *ngIf="deleteProgress as progress" class="delete-progress">
       <progress [attr.value]="progress.total ? progress.completed : null" [max]="progress.total || 1" aria-label="删除进度"></progress>
