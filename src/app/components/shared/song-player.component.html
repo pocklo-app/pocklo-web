@@ -1,0 +1,27 @@
+<article class="song">
+  <div class="artwork"><img *ngIf="cover" [src]="cover" alt="歌曲封面" referrerpolicy="no-referrer"><svg *ngIf="!cover" viewBox="0 0 48 48" aria-label="暂无封面" role="img"><path d="M19 33V13l18-4v20M19 20l18-4"/><ellipse cx="13" cy="34" rx="6" ry="4"/><ellipse cx="31" cy="30" rx="6" ry="4"/></svg></div>
+  <div *ngIf="song" class="song-body">
+    <span class="eyebrow">小兜音乐</span>
+    <h2>{{song.title}}</h2><p class="artist">{{song.artists.join(' / ') || '未知歌手'}}</p><p>{{song.album || '暂无专辑信息'}}</p>
+    <ng-container *ngIf="url && song.available">
+      <audio #audio [src]="url" preload="metadata" crossorigin="anonymous" hidden
+        (error)="recover(audio)" (loadedmetadata)="restore(audio)" (play)="playing = true; refreshIfExpired(audio)"
+        (pause)="playing = false" (ended)="playing = false" (timeupdate)="currentTime = audio.currentTime"></audio>
+      <div class="player">
+        <button class="play" type="button" [attr.aria-label]="playing ? '暂停' : '播放'" (click)="togglePlayback(audio)">
+          <svg *ngIf="!playing" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg>
+          <svg *ngIf="playing" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg>
+        </button>
+        <div class="timeline">
+          <input #seekBar class="seek" type="range" min="0" [max]="mediaDuration || 1" step="0.1" [value]="currentTime" aria-label="播放进度"
+            [style.--played]="(mediaDuration ? currentTime / mediaDuration * 100 : 0) + '%'" (change)="seek(audio, seekBar.value)">
+          <div class="times"><span>{{timeLabel(currentTime)}}</span><span>{{timeLabel(mediaDuration)}}</span></div>
+        </div>
+      </div>
+    </ng-container>
+    <p *ngIf="loading" role="status">正在获取播放地址…</p>
+    <p *ngIf="!song.available">音频已删除，暂时无法播放。</p>
+    <section class="lyrics"><h3>歌词</h3><pre class="selectable-preview">{{lyricsText || song.lyrics.text || '暂无歌词'}}</pre></section>
+  </div>
+  <p *ngIf="error" class="error" role="alert">{{error}} <button type="button" (click)="load()">重新获取</button></p>
+</article>
