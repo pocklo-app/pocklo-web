@@ -34,7 +34,7 @@ export class FinderTree {
     void request.then(data => {
       if (this.requests.get(key) !== request) return;
       this.requests.delete(key);
-      if (!data.resource.folder) return;
+      if (!data.resource?.folder) return;
       const listing = { data, time: Date.now() };
       this.cache.set(key, listing);
       this.cache.set(this.key(scope, data.resource.id), listing);

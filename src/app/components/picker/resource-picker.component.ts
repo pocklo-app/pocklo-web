@@ -209,7 +209,7 @@ export class ResourcePickerComponent implements OnInit, OnDestroy {
       try { url = new URL(message.url); } catch { return; }
       if (url.origin !== location.origin || !/^\/share\/[a-f\d-]{36}$/i.test(url.pathname) || url.search || url.hash) return;
       this.result = url.href;
-      this.notifyHost('selected', { url: this.result });
+      this.notifyHost('selected', { url: this.result, type: this.selected.type || (this.selected.folder ? 'folder' : 'file'), song: this.selected.song || null });
       this.finishPopup();
     } else if (message.type === PREFIX + 'expired' && popup.action === 'confirm') {
       this.finishPopup();
@@ -335,7 +335,7 @@ export class ResourcePickerComponent implements OnInit, OnDestroy {
         const link = new URL(url);
         if (link.origin !== location.origin || !/^\/share\/[a-f\d-]{36}$/i.test(link.pathname) || link.search || link.hash) throw new Error();
         this.result = link.href;
-        this.notifyHost('selected', { url: this.result });
+        this.notifyHost('selected', { url: this.result, type: this.selected.type || (this.selected.folder ? 'folder' : 'file'), song: this.selected.song || null });
         this.shareAttempt = undefined;
         return;
       }
@@ -343,7 +343,7 @@ export class ResourcePickerComponent implements OnInit, OnDestroy {
         ? await this.api.post('/api/picker/share', { resource_id: this.selected.id, ticket: this.ticket })
         : await this.api.post('/api/shares/', { res_str_id: this.selected.id });
       this.result = new URL('/share/' + encodeURIComponent(token), location.origin).href;
-      this.notifyOpener('selected', { url: this.result });
+      this.notifyOpener('selected', { url: this.result, type: this.selected.type || (this.selected.folder ? 'folder' : 'file'), song: this.selected.song || null });
       window.close();
     } catch (error) {
       if (this.delegated && ['insufficient_scope', 'connect_required', 'invalid_token'].includes(error?.message)) {

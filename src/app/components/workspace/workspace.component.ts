@@ -20,6 +20,8 @@ export interface Entry {
   created_at: string;
   thumbnail: string | null;
   location?: string;
+  type?: 'song';
+  song?: { song_id: string; version: number; title: string };
 }
 
 type FinderView = 'grid' | 'list' | 'columns' | 'gallery';
@@ -130,6 +132,8 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   infoItem: Entry | null = null;
 
   data: Workspace | null = null;
+  publicSong = false;
+  songEditor: Entry | null = null;
   selected: Entry | null = null;
   modalItem: Entry | null = null;
   preview: Preview | null = null;
@@ -147,6 +151,8 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   draft = '';
   linkUrl = '';
   operationError = '';
+  treeChanged() { this.tree.invalidate(); }
+
   get moveItems() { return this.tree.clipboard?.items ?? []; }
   get newUploads() { return this.tree.newUploads; }
   get showMoveBar() { return !!this.tree.clipboard?.showBar; }
@@ -287,6 +293,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.shareToken = share;
     this.resourceId = id;
     this.section = 'files';
+    this.publicSong = false;
     this.query = '';
     this.menuOpen = false;
     this.closeInspector();
@@ -418,6 +425,11 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
       const query = this.query.trim();
       const data = await this.fetchFolder(id, query);
       if (request !== this.requestNumber) return;
+      if ((data as any).type === 'song') {
+        this.publicSong = true;
+        this.data = null;
+        return;
+      }
       this.data = data;
       this.directoryPending = false;
       if (data.resource.folder) {
@@ -448,7 +460,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   focusSearch(event: KeyboardEvent) {
-    if (!this.active || event.defaultPrevented || this.busy || this.infoItem || this.createdShare || this.createDialog.nativeElement.open || this.deleteDialog.nativeElement.open) return;
+    if (this.songEditor || !this.active || event.defaultPrevented || this.busy || this.infoItem || this.createdShare || this.createDialog.nativeElement.open || this.deleteDialog.nativeElement.open) return;
     const editable = (event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable]');
     if (this.modalItem) {
       if (editable) return;

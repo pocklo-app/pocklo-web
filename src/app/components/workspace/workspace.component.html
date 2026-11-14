@@ -98,6 +98,7 @@
         <div class="actions"><a [href]="shareUrl(share)" target="_blank" rel="noopener noreferrer">打开</a><button type="button" (click)="openShare(share)">分享详情</button><button type="button" class="danger" [disabled]="busy" (click)="revokeShare(share)">撤销</button></div>
       </div>
     </section>
+    <app-song-player *ngIf="publicSong" [token]="shareToken"></app-song-player>
     <p class="quiet" *ngIf="section === 'files' && !data && loading">正在读取文件…</p>
     <app-frienden-account *ngIf="section === 'account'" class="finder-account" [embedded]="true"
       [returnResource]="!shareToken ? data?.resource.id : null"></app-frienden-account>
@@ -323,7 +324,11 @@
 </ng-template>
 
 
+<app-song-editor *ngIf="songEditor as songItem" [resource]="songItem.id" [name]="songItem.name"
+  (closed)="songEditor = null" (saved)="songEditor = null; treeChanged()"></app-song-editor>
+
 <ng-template #manageButtons let-item>
+  <button type="button" *ngIf="item.preview === 'audio'" (click)="songEditor = item">歌曲信息</button>
   <button type="button" [disabled]="busy" (click)="edit('rename', item)">重命名</button>
   <button type="button" *ngIf="item.id !== data.resource.id || data.can_delete" [disabled]="busy" (click)="beginMove(item)">移动</button>
   <button type="button" *ngIf="canDeleteItems([item])" class="danger" [disabled]="busy" (click)="confirmDelete([item])">删除</button>
@@ -351,7 +356,9 @@
     <button role="menuitem" type="button" *ngIf="selection.length === 1 && !item.folder && item.preview !== 'link'" (click)="dismissContext(true); download(item)">下载</button>
     <ng-container *ngIf="data.can_manage">
       <hr>
-      <button role="menuitem" type="button" (click)="dismissContext(true); beginMove(item, false)">拷贝 <kbd>⌘C</kbd></button>
+      <button role="menuitem" type="button" *ngIf="selection.length === 1 && item.preview === 'audio'"
+        (click)="dismissContext(); songEditor = item">{{item.type === 'song' ? '编辑歌曲信息…' : '建立歌曲…'}}</button>
+      <button role="menuitem"  type="button" (click)="dismissContext(true); beginMove(item, false)">拷贝 <kbd>⌘C</kbd></button>
       <button role="menuitem" type="button" (click)="dismissContext(true); beginMove(item)">移动到…</button>
       <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); edit('rename', item)">重新命名</button>
       <button role="menuitem" type="button" *ngIf="selection.length === 1" (click)="dismissContext(true); createShare(item)">共享…</button>

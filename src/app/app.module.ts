@@ -1,3 +1,4 @@
+import { SongEditorComponent, SongPlayerComponent } from './components/shared/song.component';
 import { ResourcePickerComponent } from './components/picker/resource-picker.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { HAMMER_GESTURE_CONFIG, HammerGestureConfig } from '@angular/platform-browser';
@@ -47,6 +48,7 @@ import { MarkdownComponent } from "./components/shared/markdown.component";
     HomeComponent,
     CliComponent,
     WorkspaceComponent,
+    SongEditorComponent, SongPlayerComponent,
     ResourcePickerComponent,
     WorkspaceDesktopComponent,
     PdfPreviewComponent,
