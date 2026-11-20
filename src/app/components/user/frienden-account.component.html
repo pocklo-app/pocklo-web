@@ -7,7 +7,26 @@
     </nav>
   </header>
 
-  <main class="public-main account-main">
+  <main *ngIf="cliHandoff" class="public-main account-main">
+    <h1>登录小兜命令行</h1>
+    <section class="sample account-panel">
+      <ng-container *ngIf="cliCallback as callback; else cancelled">
+        <p>复制一次性回调地址，粘贴到刚才发起登录的终端。</p>
+        <div class="public-actions">
+          <button type="button" class="primary" ngxClipboard [cbContent]="callback"
+            (cbOnSuccess)="cliCopied = true" (cbOnError)="address.select()">复制回调地址</button>
+        </div>
+        <input #address class="cli-callback-address" aria-label="一次性回调地址" readonly
+          autocomplete="off" spellcheck="false" [value]="callback" (focus)="address.select()">
+        <p *ngIf="cliCopied" role="status">已复制。回到终端完成登录。</p>
+      </ng-container>
+      <ng-template #cancelled>
+        <p role="status">没有收到有效授权。请回到终端重新运行 <code>pocklo login</code>。</p>
+      </ng-template>
+    </section>
+  </main>
+
+  <main *ngIf="!cliHandoff" class="public-main account-main">
     <h1 *ngIf="!embedded">账号设置</h1>
     <nav *ngIf="loggedIn" class="account-tabs" aria-label="账号设置分类">
       <button type="button" [attr.aria-pressed]="!showGrants" (click)="showGrants = false">友间绑定</button>

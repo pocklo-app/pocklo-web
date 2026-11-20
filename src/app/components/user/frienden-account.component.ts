@@ -32,6 +32,9 @@ export class FriendenAccountComponent implements OnInit {
   error = '';
   message = '';
   confirmUnlink = false;
+  cliCallback: string | null = null;
+  cliHandoff = false;
+  cliCopied = false;
 
   constructor(
     private api: BaseService,
@@ -56,6 +59,17 @@ export class FriendenAccountComponent implements OnInit {
   async ngOnInit() {
     const callback = this.route.snapshot.data['friendenCallback'];
     const params = this.route.snapshot.queryParamMap;
+    const state = params.get('state') || '';
+    if (callback && /^pocklo-cli\.[A-Za-z0-9_-]{43}$/.test(state)) {
+      this.location.replaceState('/oauth/frienden/callback');
+      this.cliHandoff = true;
+      const code = params.get('code') || '';
+      if (!params.has('error') && /^[A-Za-z0-9_-]{43}$/.test(code)) {
+        const query = new URLSearchParams({ code, state });
+        this.cliCallback = `${window.location.origin}/oauth/frienden/callback?${query}`;
+      }
+      return;
+    }
     if (callback && (!params.get('state') || params.get('state') !== sessionStorage.getItem(STATE_KEY))) {
       this.location.replaceState('/');
       await this.finishLogin(params.get('state'), params.get('code'));

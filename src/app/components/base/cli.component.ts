@@ -9,11 +9,11 @@ import { BaseService } from '../../services/base.service';
 })
 export class CliComponent implements OnInit {
   readonly commandSections = [
-    { id: 'install', title: '安装', note: '需要 Python 3.9 或更新版本。', commands: [
-      'python3 -m pip install pocklo',
+    { id: 'install', title: '安装或升级', note: '需要 Python 3.10 或更新版本。', commands: [
+      'python3 -m pip install --upgrade pocklo',
     ] },
-    { id: 'auth', title: '登录', note: '通过齐天簿完成授权。登录后可以查看当前账户。', commands: [
-      'pocklo login', 'pocklo whoami',
+    { id: 'auth', title: '登录', note: '默认使用友间。浏览器授权后，复制回调地址并粘贴到终端。也可以选择齐天簿。', commands: [
+      'pocklo login', 'pocklo login --provider qitian', 'pocklo whoami',
     ] },
     { id: 'browse', title: '浏览目录', note: '支持路径和 @资源ID。', commands: [
       'pocklo ls', 'pocklo ls /Photos/2024', 'pocklo ls @Ab12Cd',
