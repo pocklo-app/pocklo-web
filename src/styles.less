@@ -346,3 +346,16 @@ a:focus-visible {
   font-size: 13px;
 }
 .pocklo-move a { color: #c9e98e; text-decoration: underline; text-underline-offset: 3px; }
+.song-artwork {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+.song-artwork-cover { width: 100%; height: 100%; border-radius: 15%; object-fit: cover; display: block; }
+.song-artwork-cover[hidden] { visibility: hidden; }
+.song-artwork-badge { position: absolute; inset: auto -2px -2px auto; width: 32%; min-width: 12px; max-width: 26px; }

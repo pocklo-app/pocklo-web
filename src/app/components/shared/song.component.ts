@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { BaseService } from '../../services/base.service';
+import type { Entry, Workspace } from '../workspace/workspace.component';
 
 export interface Song {
   schema: 'pocklo.song.v1';
@@ -112,37 +113,77 @@ export class SongPlayerComponent implements OnInit {
 })
 export class SongEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('dialog', {static:true}) private dialog: ElementRef<HTMLDialogElement>;
+  @ViewChild('lyricsPicker', {static:true}) private lyricsPicker: ElementRef<HTMLDialogElement>;
   @Input() resource = '';
   @Input() name = '';
+  @Input() directory = '';
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
   song?: Song;
   title = '';
   artists = '';
   album = '';
-  audioResource = '';
   duration: number | null = null;
   lyricsType = 'none';
-  lyrics = '';
+  lyricsUpdate?: { type: 'lrc' | 'none'; text: string };
+  lyricsName = '';
+  readingLyrics = false;
+  pickerListing?: Workspace;
+  pickerLoading = false;
+  pickerError = '';
+  pickedLyrics?: Entry;
+  dropTarget: 'cover' | 'lyrics' | null = null;
   useEmbedded = true;
   embeddedCover = false;
   coverFile?: File;
-  audioFile?: File;
   removeCover = false;
   coverPreview = '';
   embeddedPreview = '';
   existingPreview = '';
-  advanced = false;
-  readonly lyricFormats = [
-    {id:'none',name:'无歌词'}, {id:'text',name:'纯文本'}, {id:'lrc',name:'同步歌词'},
-  ];
   private uploadedCover = '';
-  chooseCover(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+  chooseFile(event: Event, kind: 'cover' | 'lyrics') {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) this.useFile(file, kind);
+  }
+  dragOver(event: DragEvent, kind: 'cover' | 'lyrics') {
+    if (!event.dataTransfer?.types.includes('Files')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const blocked = this.busy || this.readingLyrics;
+    event.dataTransfer.dropEffect = blocked ? 'none' : 'copy';
+    this.dropTarget = blocked ? null : kind;
+  }
+  dragLeave(event: DragEvent, kind: 'cover' | 'lyrics') {
+    if (this.dropTarget === kind && !(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node)) {
+      this.dropTarget = null;
+    }
+  }
+  dropFile(event: DragEvent, kind: 'cover' | 'lyrics') {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dropTarget = null;
+    if (this.busy || this.readingLyrics) return;
+    const files = event.dataTransfer?.files;
+    if (files?.length === 1) this.useFile(files[0], kind);
+    else this.error = '请一次拖入一个文件。';
+  }
+  private useFile(file: File, kind: 'cover' | 'lyrics') {
+    this.error = '';
+    if (kind === 'lyrics') {
+      void this.readLyricsFile(file);
+      return;
+    }
+    if (!/\.(png|jpe?g|webp)$/i.test(file.name) && !/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      this.error = '请选择 JPG、PNG 或 WebP 封面。';
+      return;
+    }
     if (file.size > 8 * 1024 * 1024) { this.error = '封面不能超过 8 MB。'; return; }
     this.clearCoverPreview();
+    this.uploadedCover = '';
     this.coverFile = file;
+    this.useEmbedded = false;
     this.removeCover = false;
     this.coverPreview = URL.createObjectURL(file);
   }
@@ -178,24 +219,31 @@ export class SongEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private api: BaseService) {}
   ngOnInit() { void this.load(); }
   ngAfterViewInit() { this.dialog.nativeElement.showModal(); }
-  ngOnDestroy() { this.clearCoverPreview(); this.destroyed = true; clearTimeout(this.timer); this.dialog.nativeElement.close(); }
+  ngOnDestroy() {
+    this.clearCoverPreview();
+    this.destroyed = true;
+    clearTimeout(this.timer);
+    this.lyricsPicker.nativeElement.close();
+    this.dialog.nativeElement.close();
+  }
   async load() {
     try {
       const response = await this.api.get('/api/audio/' + this.resource + '/metadata');
       if (this.destroyed) return;
       this.status = response.status;
-      if (!this.song && this.loading) {
+      if (this.loading) {
         this.song = response.song;
         const data = this.song || response.extracted;
         this.title = data.title || this.name.replace(/\.[^.]+$/, '');
         this.artists = (data.artists || []).join('\n');
         this.album = data.album || '';
         this.duration = data.duration_ms ?? null;
-        this.lyricsType = data.lyrics?.type || 'none';
-        this.lyrics = data.lyrics?.text || '';
+        const type = data.lyrics?.type;
+        this.lyricsType = type === 'lrc' || type === 'synchronized' || (type === 'text' && !!this.song)
+          ? type : 'none';
         this.embeddedCover = response.has_embedded_cover;
         this.existingPreview = response.cover_preview_url || '';
-        if (!this.song || this.song.cover_source === 'embedded') this.embeddedPreview = this.existingPreview;
+        this.embeddedPreview = response.embedded_cover_url || '';
         this.useEmbedded = !this.song || this.song.cover_source === 'embedded';
       }
       if (['pending','parsing'].includes(this.status)) {
@@ -211,47 +259,94 @@ export class SongEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     try { await this.api.post('/api/audio/' + this.resource + '/metadata', {}); await this.load(); }
     catch { this.loading = false; this.error = '无法重新解析。'; }
   }
-  async readLyrics(event: Event) {
-    const file: File = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (file.size > 100000) { this.error = '歌词文件不能超过 100 KB。'; return; }
-    this.lyrics = await file.text();
-    this.lyricsType = file.name.toLowerCase().endsWith('.lrc') ? 'lrc' : 'text';
+  private async readLyricsFile(file: File) {
+    if (!/\.lrc$/i.test(file.name)) { this.error = '请选择 .lrc 同步歌词文件。'; return; }
+    if (file.size > 100_000) { this.error = '歌词文件不能超过 100 KB。'; return; }
+    this.readingLyrics = true;
+    try {
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+      if (!this.destroyed) this.setLyrics(file.name, text);
+    } catch (error) {
+      this.error = error instanceof TypeError ? '无法读取歌词，请使用 UTF-8 编码的 LRC 文件。'
+        : error instanceof Error ? error.message : '无法读取歌词文件。';
+    }
+    finally { this.readingLyrics = false; }
+  }
+  private setLyrics(name: string, text: string) {
+    if (!/\[\d{1,3}:[0-5]\d(?:[.:]\d{1,3})?\]/.test(text)) {
+      throw new Error('LRC 文件需要包含歌词时间标签。');
+    }
+    this.lyricsName = name;
+    this.lyricsType = 'lrc';
+    this.lyricsUpdate = {type: 'lrc', text};
+  }
+  removeLyrics() {
+    this.lyricsName = '';
+    this.lyricsType = 'none';
+    this.lyricsUpdate = {type: 'none', text: ''};
+  }
+  get lyricEntries() {
+    return this.pickerListing?.entries.filter(item => item.folder || /\.lrc$/i.test(item.name)) || [];
+  }
+  openLyricsPicker() {
+    this.pickerListing = undefined;
+    this.lyricsPicker.nativeElement.showModal();
+    void this.browseLyrics(this.directory);
+  }
+  async browseLyrics(directory: string) {
+    this.pickerLoading = true;
+    this.pickerError = '';
+    this.pickedLyrics = undefined;
+    try {
+      if (!directory) throw new Error();
+      const listing = await this.api.get('/api/res/' + directory + '/workspace');
+      if (!listing.can_manage || !listing.resource.folder) throw new Error();
+      this.pickerListing = listing;
+    } catch { this.pickerError = '无法读取此目录。'; }
+    finally { this.pickerLoading = false; }
+  }
+  closeLyricsPicker() {
+    if (!this.pickerLoading) this.lyricsPicker.nativeElement.close();
+  }
+  async importLyricsResource() {
+    const item = this.pickedLyrics;
+    if (!item || this.pickerLoading) return;
+    this.pickerError = '';
+    if (item.size > 100_000) { this.pickerError = '歌词文件不能超过 100 KB。'; return; }
+    this.pickerLoading = true;
+    try {
+      const content = await this.api.get('/api/res/' + item.id + '/content');
+      if (content.kind !== 'text' || content.truncated || typeof content.text !== 'string') throw new Error('无法读取歌词文件。');
+      if (new TextEncoder().encode(content.text).length > 100_000) throw new Error('歌词文件不能超过 100 KB。');
+      this.setLyrics(item.name, content.text);
+      this.error = '';
+      this.lyricsPicker.nativeElement.close();
+    } catch (error) {
+      this.pickerError = error instanceof Error ? error.message : '无法读取歌词文件。';
+    } finally { this.pickerLoading = false; }
   }
   async save() {
-    if (this.busy) return;
+    if (this.busy || this.readingLyrics) return;
     this.busy = true;
     this.error = '';
     try {
-      const data: any = {audio_resource_id:this.audioResource.trim() || this.resource, title:this.title, artists:this.artists.split('\n').map(v => v.trim()).filter(Boolean),
+      const data: any = {title:this.title, artists:this.artists.split('\n').map(v => v.trim()).filter(Boolean),
         album:this.album, duration_ms:this.duration, use_embedded_cover:this.useEmbedded};
-      if (this.lyricsType !== 'synchronized') data.lyrics = {type:this.lyricsType, text:this.lyricsType === 'none' ? '' : this.lyrics};
-      if (this.coverFile || this.audioFile) {
+      if (this.lyricsUpdate) data.lyrics = this.lyricsUpdate;
+      if (this.coverFile && !this.uploadedCover) {
         const workspace = await this.api.get('/api/res/' + this.resource + '/workspace');
         const parent = workspace.breadcrumbs.at(-2)?.id;
         if (!parent) throw new Error('无法确定上传目录。');
-        const upload = async (file: File) => {
-          const token = await this.api.get('/api/res/' + parent + '/token', {filename:file.name});
-          return this.api.api_upload_file(token.key, token.upload_token, file, null);
-        };
-        if (this.coverFile) {
-          if (this.coverFile.size > 8 * 1024 * 1024) throw new Error('封面不能超过 8 MB。');
-          this.uploadedCover = (await upload(this.coverFile)).res_str_id;
-          this.coverFile = undefined;
-        }
-        if (this.audioFile) {
-          this.audioResource = (await upload(this.audioFile)).res_str_id;
-          data.audio_resource_id = this.audioResource;
-          this.audioFile = undefined;
-        }
+        const token = await this.api.get('/api/res/' + parent + '/token', {filename:this.coverFile.name});
+        const uploaded = await this.api.api_upload_file(token.key, token.upload_token, this.coverFile, null);
+        this.uploadedCover = uploaded.res_str_id;
       }
       if (this.removeCover || (this.useEmbedded && this.song?.cover_source === 'resource')) data.cover_resource_id = null;
-      if (data.audio_resource_id !== this.resource) delete data.duration_ms;
       if (this.uploadedCover) data.cover_resource_id = this.uploadedCover;
       if (this.song) {
         data.version = this.song.version;
         this.song = await this.api.put('/api/songs/' + this.song.song_id, data);
-      } else this.song = await this.api.post('/api/songs/', data);
+      } else this.song = await this.api.post('/api/songs/', {...data, audio_resource_id: this.resource});
       this.saved.emit();
     } catch (error) {
       this.error = error?.error?.body?.error === 'version_conflict'

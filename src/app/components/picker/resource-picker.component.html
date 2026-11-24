@@ -49,6 +49,11 @@
               <img *ngIf="view === 'grid' && !item.folder && (item.preview === 'image' || item.preview === 'video') && item.thumbnail"
                 #thumbnail class="entry-thumbnail" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
                 hidden (load)="thumbnail.hidden = false" (error)="thumbnail.hidden = true">
+              <span class="song-artwork" *ngIf="item.type === 'song'">
+                <img *ngIf="item.thumbnail" #cover class="song-artwork-cover" [src]="item.thumbnail" alt="" loading="lazy"
+                  referrerpolicy="no-referrer" hidden (load)="cover.hidden = false" (error)="cover.hidden = true">
+                <img class="song-artwork-badge" src="assets/finder/song-badge.svg" alt="">
+              </span>
             </span>
             <span class="entry-label"><strong>{{item.name}}</strong><small *ngIf="item.type === 'song'">歌曲 · {{item.song?.title}}</small><small *ngIf="item.location">{{item.location}}</small></span>
           </button>

@@ -2,8 +2,13 @@
 <ng-template #art let-item let-thumb="thumbnail" let-badge="uploadBadge">
   <span class="file-art">
     <img draggable="false" class="file-icon" [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/' + iconType(item) + '.svg'" alt="">
-    <img draggable="false" class="file-thumbnail" *ngIf="thumb && item.thumbnail" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
+    <img draggable="false" class="file-thumbnail" *ngIf="thumb && item.thumbnail && item.type !== 'song'" [src]="item.thumbnail" alt="" loading="lazy" referrerpolicy="no-referrer"
       (error)="$any($event.target).hidden = true" (load)="$any($event.target).hidden = false">
+    <span class="song-artwork" *ngIf="item.type === 'song'">
+      <img *ngIf="item.thumbnail" #cover class="song-artwork-cover" draggable="false" [src]="item.thumbnail" alt=""
+        loading="lazy" referrerpolicy="no-referrer" hidden (load)="cover.hidden = false" (error)="cover.hidden = true">
+      <img class="song-artwork-badge" src="assets/finder/song-badge.svg" draggable="false" alt="">
+    </span>
     <span *ngIf="badge && !shareToken && newUploads.has(item.id)" class="new-upload-dot" role="img" aria-label="新上传" title="新上传"></span>
   </span>
 </ng-template>
@@ -325,6 +330,7 @@
 
 
 <app-song-editor *ngIf="songEditor as songItem" [resource]="songItem.id" [name]="songItem.name"
+  [directory]="(data?.resource?.folder ? data?.resource?.id : data?.breadcrumbs?.at(-2)?.id) || ''"
   (closed)="songEditor = null" (saved)="songEditor = null; treeChanged()"></app-song-editor>
 
 <ng-template #manageButtons let-item>

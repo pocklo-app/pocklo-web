@@ -14,20 +14,22 @@
       <div class="status" *ngIf="status === 'failed'"><span>暂时无法读取内嵌信息，可直接填写</span><button type="button" class="text-button" (click)="retry()">重新解析</button></div>
       <ng-container *ngIf="!loading">
         <section class="identity">
-          <button class="cover-preview" type="button" [disabled]="busy" (click)="coverInput.click()" aria-label="选择歌曲封面">
+          <button class="cover-preview" type="button" [disabled]="busy" (click)="coverInput.click()" aria-label="选择歌曲封面"
+            [class.drop-active]="dropTarget === 'cover'" (dragover)="dragOver($event, 'cover')"
+            (dragleave)="dragLeave($event, 'cover')" (drop)="dropFile($event, 'cover')">
             <img *ngIf="coverPreview || existingPreview" [src]="coverPreview || existingPreview" alt="歌曲封面" referrerpolicy="no-referrer">
             <svg *ngIf="!coverPreview && !existingPreview" viewBox="0 0 48 48" aria-hidden="true"><path d="M19 33V13l18-4v20M19 20l18-4"/><ellipse cx="13" cy="34" rx="6" ry="4"/><ellipse cx="31" cy="30" rx="6" ry="4"/></svg>
-            <span class="cover-edit">更换封面</span>
+            <span class="cover-edit">{{dropTarget === 'cover' ? '松开使用封面' : '点击或拖入'}}</span>
           </button>
           <div class="identity-meta">
-            <span class="section-caption">音频文件</span><strong [title]="audioFile?.name || name">{{audioFile?.name || name}}</strong>
+            <span class="section-caption">音频文件</span><strong [title]="name">{{name}}</strong>
             <span class="source-status">{{coverFile ? '已选择新封面' : removeCover ? '不使用封面' : song?.cover || embeddedCover ? '已读取封面信息' : '暂无封面'}}</span>
             <div class="inline-actions">
               <button type="button" [disabled]="busy" (click)="coverInput.click()">选择封面</button>
               <button type="button" class="text-button muted" [disabled]="busy" (click)="removeArtwork()">移除</button>
             </div>
           </div>
-          <input #coverInput type="file" hidden accept="image/png,image/jpeg,image/webp" (change)="chooseCover($event)" [disabled]="busy">
+          <input #coverInput type="file" hidden accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" (change)="chooseFile($event, 'cover')" [disabled]="busy">
         </section>
         <div class="preference-row">
           <div><strong>使用内嵌封面</strong><small>优先使用音频文件中的专辑封面</small></div>
@@ -40,25 +42,23 @@
           <label>时长<span class="duration-field"><input type="number" name="duration" [(ngModel)]="durationSeconds" min="0" max="86400" step="0.001" placeholder="未识别" [disabled]="busy"><span>秒</span></span></label>
         </section>
         <section class="lyrics-section">
-          <div class="section-heading"><h3>歌词</h3><button type="button" class="text-button" [disabled]="busy" (click)="lyricsInput.click()">导入歌词文件</button></div>
-          <input #lyricsInput type="file" hidden accept=".lrc,.txt" (change)="readLyrics($event)" [disabled]="busy">
-          <div class="segments" role="group" aria-label="歌词格式">
-            <button *ngFor="let option of lyricFormats" type="button" [attr.aria-pressed]="lyricsType === option.id" [disabled]="busy" (click)="lyricsType = option.id">{{option.name}}</button>
-            <button *ngIf="lyricsType === 'synchronized'" type="button" aria-pressed="true" [disabled]="busy">内嵌同步歌词</button>
+          <div class="section-heading">
+            <h3>歌词</h3>
+            <button *ngIf="lyricsType !== 'none'" type="button" class="text-button muted" [disabled]="busy || readingLyrics" (click)="removeLyrics()">移除歌词</button>
           </div>
-          <label class="lyric-editor" *ngIf="lyricsType === 'text' || lyricsType === 'lrc'">
-            <span class="sr-only">歌词内容</span><textarea name="lyrics" [(ngModel)]="lyrics" rows="6" [placeholder]="lyricsType === 'lrc' ? '[00:12.00] 在这里填写这一句歌词' : '在这里填写歌词'" [disabled]="busy"></textarea>
-          </label>
-          <p class="empty-lyrics" *ngIf="lyricsType === 'none'">可以稍后补充歌词</p>
-          <p class="empty-lyrics" *ngIf="lyricsType === 'synchronized'">已保留音频中的同步歌词</p>
-        </section>
-        <section class="audio-options" *ngIf="song">
-          <button class="disclosure" type="button" [attr.aria-expanded]="advanced" (click)="advanced = !advanced"><span>替换音频</span><svg viewBox="0 0 24 24" [class.expanded]="advanced" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
-          <div class="audio-options-body" *ngIf="advanced">
-            <button class="attachment" type="button" [disabled]="busy" (click)="audioInput.click()"><span>选择新音频</span><small>{{audioFile?.name || '从设备上传'}}</small></button>
-            <input #audioInput type="file" hidden accept="audio/*,.mp3" (change)="audioFile = $any($event.target).files[0]" [disabled]="busy">
-            <label>或使用已有资源<input name="audioResource" [(ngModel)]="audioResource" placeholder="输入音频资源 ID" [disabled]="busy"></label>
+          <div class="lyric-drop" [class.drop-active]="dropTarget === 'lyrics'" (dragover)="dragOver($event, 'lyrics')"
+            (dragleave)="dragLeave($event, 'lyrics')" (drop)="dropFile($event, 'lyrics')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5M12 4v11m-4-7 4-4 4 4"/></svg>
+            <div>
+              <strong>{{dropTarget === 'lyrics' ? '松开导入歌词' : lyricsName || (lyricsType === 'none' ? '拖入 LRC 文件' : lyricsType === 'text' ? '已有歌词' : '已有同步歌词')}}</strong>
+              <span>{{readingLyrics ? '正在读取歌词…' : '支持 .lrc 文件，最大 100 KB'}}</span>
+            </div>
           </div>
+          <div class="inline-actions">
+            <button type="button" [disabled]="busy || readingLyrics" (click)="lyricsInput.click()">从设备选择</button>
+            <button type="button" [disabled]="busy || readingLyrics" (click)="openLyricsPicker()">从小兜选择</button>
+          </div>
+          <input #lyricsInput type="file" hidden accept=".lrc" (change)="chooseFile($event, 'lyrics')" [disabled]="busy || readingLyrics">
         </section>
       </ng-container>
       <p *ngIf="error" class="error" role="alert">{{error}}</p>
@@ -66,7 +66,40 @@
     <footer>
       <span class="footer-note">{{busy ? '正在保存歌曲信息' : '音频、封面和歌词独立保存'}}</span>
       <button type="button" [disabled]="busy" (click)="closed.emit()">取消</button>
-      <button class="primary" type="submit" [disabled]="busy || loading || !title.trim()"><span *ngIf="busy" class="spinner"></span>{{busy ? '正在保存' : song ? '保存修改' : '建立歌曲'}}</button>
+      <button class="primary" type="submit" [disabled]="busy || readingLyrics || loading || !title.trim()"><span *ngIf="busy" class="spinner"></span>{{busy ? '正在保存' : song ? '保存修改' : '建立歌曲'}}</button>
     </footer>
   </form>
+</dialog>
+
+<dialog #lyricsPicker class="lyrics-picker" aria-labelledby="lyrics-picker-title"
+  (cancel)="$event.preventDefault(); $event.stopPropagation(); closeLyricsPicker()">
+  <div class="picker-sheet">
+    <header class="sheet-header">
+      <h2 id="lyrics-picker-title">从小兜选择歌词</h2>
+      <button class="icon-button" type="button" aria-label="关闭资源选择器" [disabled]="pickerLoading" (click)="closeLyricsPicker()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      </button>
+    </header>
+    <div class="sheet-content picker-content">
+      <nav class="picker-path" *ngIf="pickerListing" aria-label="当前目录">
+        <button *ngFor="let part of pickerListing.breadcrumbs; let last = last" type="button"
+          [attr.aria-current]="last ? 'location' : null" [disabled]="pickerLoading || last" (click)="browseLyrics(part.id)">{{part.name}}</button>
+      </nav>
+      <p *ngIf="pickerLoading" role="status" class="picker-message">正在读取…</p>
+      <p *ngIf="pickerError" role="alert" class="error">{{pickerError}}</p>
+      <p *ngIf="!pickerLoading && pickerListing && !lyricEntries.length" class="picker-message">此目录没有 LRC 文件或子目录。</p>
+      <div class="picker-files">
+        <button *ngFor="let item of lyricEntries" type="button" [disabled]="pickerLoading"
+          [attr.aria-pressed]="item.folder ? null : pickedLyrics?.id === item.id"
+          (click)="item.folder ? browseLyrics(item.id) : pickedLyrics = item" [title]="item.name">
+          <img [src]="item.folder ? 'assets/finder/folder.svg' : 'assets/file-types/audio.svg'" width="23" height="23" alt="">
+          <span>{{item.name}}</span><span class="folder-arrow" *ngIf="item.folder" aria-hidden="true">›</span>
+        </button>
+      </div>
+    </div>
+    <footer>
+      <button type="button" [disabled]="pickerLoading" (click)="closeLyricsPicker()">取消</button>
+      <button type="button" class="primary" [disabled]="pickerLoading || !pickedLyrics" (click)="importLyricsResource()">使用此歌词</button>
+    </footer>
+  </div>
 </dialog>
